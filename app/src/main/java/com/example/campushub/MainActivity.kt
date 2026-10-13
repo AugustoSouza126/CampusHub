@@ -172,6 +172,27 @@ class MainActivity : AppCompatActivity() {
         return getInscricoes().contains(eventoId.toString())
     }
 
+    private fun getFavoritos(): MutableSet<String> {
+        val set = prefs.getStringSet("user_favoritos", null)
+        return set?.toMutableSet() ?: mutableSetOf()
+    }
+
+    private fun salvarFavorito(eventoId: Int) {
+        val favs = getFavoritos()
+        favs.add(eventoId.toString())
+        prefs.edit().putStringSet("user_favoritos", favs).apply()
+    }
+
+    private fun removerFavorito(eventoId: Int) {
+        val favs = getFavoritos()
+        favs.remove(eventoId.toString())
+        prefs.edit().putStringSet("user_favoritos", favs).apply()
+    }
+
+    private fun isFavorito(eventoId: Int): Boolean {
+        return getFavoritos().contains(eventoId.toString())
+    }
+
     // =========================================================
     // UTILITÁRIOS DE DESIGN E SHAPES
     // =========================================================
@@ -331,7 +352,7 @@ class MainActivity : AppCompatActivity() {
             setBackgroundColor(COLOR_CARD_BG)
             elevation = dpToPx(12).toFloat()
             background = criarShape(COLOR_CARD_BG, COLOR_STROKE, 1, 0f)
-            weightSum = 3f
+            weightSum = 4f
         }
 
         fun criarItemNav(icone: String, rotulo: String, abaId: String, acao: () -> Unit) {
@@ -358,7 +379,7 @@ class MainActivity : AppCompatActivity() {
 
             val tvTexto = TextView(this).apply {
                 text = rotulo
-                textSize = 12f
+                textSize = 11f
                 typeface = if (ehAtivo) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
                 setTextColor(if (ehAtivo) COLOR_PRIMARY_LIGHT else COLOR_TEXT_MUTED)
                 gravity = Gravity.CENTER
@@ -372,7 +393,11 @@ class MainActivity : AppCompatActivity() {
             if (abaAtiva != "HOME") mostrarHome()
         }
 
-        criarItemNav("📅", "Meus Eventos", "MEUS_EVENTOS") {
+        criarItemNav("❤️", "Favoritos", "FAVORITOS") {
+            if (abaAtiva != "FAVORITOS") mostrarFavoritos()
+        }
+
+        criarItemNav("📅", "Inscrições", "MEUS_EVENTOS") {
             if (abaAtiva != "MEUS_EVENTOS") mostrarMeusEventos()
         }
 
@@ -736,6 +761,24 @@ class MainActivity : AppCompatActivity() {
         }
         rowTop.addView(tvDataBadge)
 
+        val tvHeart = TextView(this).apply {
+            text = if (isFavorito(evento.id)) " ❤️" else " 🤍"
+            textSize = 18f
+            setPadding(dpToPx(8), 0, 0, 0)
+            setOnClickListener {
+                if (isFavorito(evento.id)) {
+                    removerFavorito(evento.id)
+                    text = " 🤍"
+                    Toast.makeText(this@MainActivity, "Removido dos favoritos.", Toast.LENGTH_SHORT).show()
+                } else {
+                    salvarFavorito(evento.id)
+                    text = " ❤️"
+                    Toast.makeText(this@MainActivity, "Adicionado aos favoritos!", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        rowTop.addView(tvHeart)
+
         layoutInterno.addView(rowTop)
 
         // Título
@@ -858,6 +901,21 @@ class MainActivity : AppCompatActivity() {
         cardInfo.addView(innerInfo)
         layout.addView(cardInfo)
 
+        val eFavorito = isFavorito(evento.id)
+        if (eFavorito) {
+            layout.addView(criarBotao("💔 DESFAVORITAR EVENTO", primario = false) {
+                removerFavorito(evento.id)
+                Toast.makeText(this, "Removido dos favoritos.", Toast.LENGTH_SHORT).show()
+                mostrarDetalhes(evento)
+            })
+        } else {
+            layout.addView(criarBotao("❤️ FAVORITAR EVENTO", primario = false) {
+                salvarFavorito(evento.id)
+                Toast.makeText(this, "Adicionado aos favoritos!", Toast.LENGTH_SHORT).show()
+                mostrarDetalhes(evento)
+            })
+        }
+
         val inscrito = isInscrito(evento.id)
 
         if (inscrito) {
@@ -886,6 +944,38 @@ class MainActivity : AppCompatActivity() {
         layout.addView(criarBotao("VOLTAR", primario = false) {
             mostrarHome()
         })
+    }
+
+    // =========================================================
+    // TELA MEUS FAVORITOS
+    // =========================================================
+
+    private fun mostrarFavoritos() {
+        val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "FAVORITOS")
+
+        layout.addView(criarHeaderBar("Meus Favoritos", "Eventos que você salvou para acompanhar."))
+
+        val favoritosIds = getFavoritos()
+        val favoritosLista = listaEventos.filter { favoritosIds.contains(it.id.toString()) }
+
+        if (favoritosLista.isEmpty()) {
+            val tvVazio = TextView(this).apply {
+                text = "Você ainda não favoritou nenhum evento.\nClique no ❤️ dos eventos para salvar aqui!"
+                textSize = 15f
+                setTextColor(COLOR_TEXT_MUTED)
+                setPadding(0, dpToPx(30), 0, dpToPx(20))
+                gravity = Gravity.CENTER
+            }
+            layout.addView(tvVazio)
+
+            layout.addView(criarBotao("EXPLORAR EVENTOS DISPONÍVEIS") {
+                mostrarHome()
+            })
+        } else {
+            favoritosLista.forEach { evento ->
+                adicionarCardEvento(layout, evento)
+            }
+        }
     }
 
     // =========================================================
