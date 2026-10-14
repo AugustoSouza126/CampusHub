@@ -840,32 +840,52 @@ class MainActivity : AppCompatActivity() {
 
         layout.addView(criarHeaderBar(saudacao, "Confira os eventos da universidade e garanta sua vaga."))
 
-        // BUSCA
-        layout.addView(criarRotulo("Buscar eventos"))
-        val inputBusca = criarCampoTexto("🔎 Pesquisar por título, local ou assunto...")
+        var termoBusca = ""
+        var situacaoSelecionada = "Todos" // "Todos", "Próximos", "Encerrados"
+        var categoriaSelecionada = "Todas" // "Todas", "Acadêmico", "Workshop", "Hackathon", "Palestra", "Carreiras", "Segurança"
+
+        // 1. BUSCA POR TÍTULO
+        layout.addView(criarRotulo("Buscar por título"))
+        val inputBusca = criarCampoTexto("🔎 Digite o título do evento...")
         layout.addView(inputBusca)
+
+        // 2. FILTRO DE SITUAÇÃO (Todos / Próximos / Encerrados)
+        layout.addView(criarRotulo("Situação do evento"))
+        val rowSituacao = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            weightSum = 3f
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, dpToPx(8))
+            }
+        }
+
+        val opcoesSituacao = listOf("Todos", "Próximos", "Encerrados")
+        val botoesSituacao = mutableListOf<Button>()
 
         val containerEventos = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
         }
 
-        fun atualizarLista(filtro: String = "") {
+        fun aplicarFiltros() {
             containerEventos.removeAllViews()
 
-            val filtrados = if (filtro.isBlank()) {
-                listaEventos
-            } else {
-                listaEventos.filter {
-                    it.titulo.contains(filtro, ignoreCase = true) ||
-                            it.local.contains(filtro, ignoreCase = true) ||
-                            it.categoria.contains(filtro, ignoreCase = true) ||
-                            it.descricao.contains(filtro, ignoreCase = true)
+            val filtrados = listaEventos.filter { evento ->
+                val bateTitulo = termoBusca.isBlank() || evento.titulo.contains(termoBusca, ignoreCase = true)
+                val bateCategoria = categoriaSelecionada == "Todas" || evento.categoria.equals(categoriaSelecionada, ignoreCase = true)
+                val bateSituacao = when (situacaoSelecionada) {
+                    "Próximos" -> !evento.encerrado
+                    "Encerrados" -> evento.encerrado
+                    else -> true
                 }
+                bateTitulo && bateCategoria && bateSituacao
             }
 
             if (filtrados.isEmpty()) {
                 val tvVazio = TextView(this).apply {
-                    text = "Nenhum evento encontrado para '$filtro'."
+                    text = "Nenhum evento encontrado com os filtros selecionados."
                     textSize = 15f
                     setTextColor(COLOR_TEXT_MUTED)
                     setPadding(0, dpToPx(20), 0, dpToPx(20))
@@ -879,15 +899,111 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        fun atualizarEstiloSituacao() {
+            botoesSituacao.forEachIndexed { index, btn ->
+                val opcao = opcoesSituacao[index]
+                val selecionado = (opcao == situacaoSelecionada)
+                if (selecionado) {
+                    btn.background = criarShape(COLOR_PRIMARY, Color.TRANSPARENT, 0, 10f)
+                    btn.setTextColor(Color.WHITE)
+                } else {
+                    btn.background = criarShape(Color.WHITE, COLOR_STROKE, 1, 10f)
+                    btn.setTextColor(COLOR_TEXT_MUTED)
+                }
+            }
+        }
+
+        opcoesSituacao.forEach { opcao ->
+            val btn = MaterialButton(this).apply {
+                text = opcao
+                textSize = 13f
+                typeface = Typeface.DEFAULT_BOLD
+                isAllCaps = false
+                cornerRadius = dpToPx(10)
+                setOnClickListener {
+                    situacaoSelecionada = opcao
+                    atualizarEstiloSituacao()
+                    aplicarFiltros()
+                }
+                layoutParams = LinearLayout.LayoutParams(0, dpToPx(42), 1f).apply {
+                    setMargins(dpToPx(2), 0, dpToPx(2), 0)
+                }
+            }
+            botoesSituacao.add(btn)
+            rowSituacao.addView(btn)
+        }
+        atualizarEstiloSituacao()
+        layout.addView(rowSituacao)
+
+        // 3. FILTRO DE CATEGORIA (Horizontal Scroll)
+        layout.addView(criarRotulo("Categoria"))
+        val scrollCategorias = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, dpToPx(16))
+            }
+        }
+
+        val rowCategorias = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+
+        val categoriasOpcoes = listOf("Todas", "Acadêmico", "Workshop", "Hackathon", "Palestra", "Carreiras", "Segurança")
+        val botoesCategorias = mutableListOf<Button>()
+
+        fun atualizarEstiloCategorias() {
+            botoesCategorias.forEachIndexed { index, btn ->
+                val cat = categoriasOpcoes[index]
+                val selecionada = (cat == categoriaSelecionada)
+                if (selecionada) {
+                    btn.background = criarShape(COLOR_PRIMARY_LIGHT, Color.TRANSPARENT, 0, 20f)
+                    btn.setTextColor(Color.WHITE)
+                } else {
+                    btn.background = criarShape(Color.WHITE, COLOR_STROKE, 1, 20f)
+                    btn.setTextColor(COLOR_TEXT_MUTED)
+                }
+            }
+        }
+
+        categoriasOpcoes.forEach { cat ->
+            val btnCat = MaterialButton(this).apply {
+                text = cat
+                textSize = 12f
+                typeface = Typeface.DEFAULT_BOLD
+                isAllCaps = false
+                cornerRadius = dpToPx(20)
+                setOnClickListener {
+                    categoriaSelecionada = cat
+                    atualizarEstiloCategorias()
+                    aplicarFiltros()
+                }
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    dpToPx(38)
+                ).apply {
+                    setMargins(0, 0, dpToPx(8), 0)
+                }
+            }
+            botoesCategorias.add(btnCat)
+            rowCategorias.addView(btnCat)
+        }
+        atualizarEstiloCategorias()
+        scrollCategorias.addView(rowCategorias)
+        layout.addView(scrollCategorias)
+
         inputBusca.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                atualizarLista(s?.toString() ?: "")
+                termoBusca = s?.toString() ?: ""
+                aplicarFiltros()
             }
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        atualizarLista()
+        aplicarFiltros()
         layout.addView(containerEventos)
     }
 
