@@ -17,6 +17,21 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import com.google.android.material.button.MaterialButton
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
+import org.json.JSONArray
+import org.json.JSONObject
+
+data class Comentario(
+    val id: String = UUID.randomUUID().toString(),
+    val eventoId: Int,
+    val autorNome: String,
+    val autorEmail: String,
+    val texto: String,
+    val dataPublicacao: String
+)
 
 data class Evento(
     val id: Int,
@@ -191,6 +206,84 @@ class MainActivity : AppCompatActivity() {
 
     private fun isFavorito(eventoId: Int): Boolean {
         return getFavoritos().contains(eventoId.toString())
+    }
+
+    // =========================================================
+    // COMENTÁRIOS (SharedPreferences com JSON)
+    // =========================================================
+
+    private fun getTodosComentarios(): List<Comentario> {
+        val jsonStr = prefs.getString("user_comentarios", "[]") ?: "[]"
+        val lista = mutableListOf<Comentario>()
+        try {
+            val jsonArray = JSONArray(jsonStr)
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                lista.add(
+                    Comentario(
+                        id = obj.optString("id", UUID.randomUUID().toString()),
+                        eventoId = obj.optInt("eventoId"),
+                        autorNome = obj.optString("autorNome"),
+                        autorEmail = obj.optString("autorEmail"),
+                        texto = obj.optString("texto"),
+                        dataPublicacao = obj.optString("dataPublicacao")
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return lista
+    }
+
+    private fun salvarTodosComentarios(lista: List<Comentario>) {
+        val jsonArray = JSONArray()
+        for (c in lista) {
+            val obj = JSONObject().apply {
+                put("id", c.id)
+                put("eventoId", c.eventoId)
+                put("autorNome", c.autorNome)
+                put("autorEmail", c.autorEmail)
+                put("texto", c.texto)
+                put("dataPublicacao", c.dataPublicacao)
+            }
+            jsonArray.put(obj)
+        }
+        prefs.edit().putString("user_comentarios", jsonArray.toString()).apply()
+    }
+
+    private fun getComentariosDoEvento(eventoId: Int): List<Comentario> {
+        return getTodosComentarios().filter { it.eventoId == eventoId }
+    }
+
+    private fun adicionarComentario(eventoId: Int, texto: String) {
+        val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        val dataFormatada = sdf.format(Date())
+        val novo = Comentario(
+            eventoId = eventoId,
+            autorNome = getUsuarioNome().ifEmpty { "Usuário" },
+            autorEmail = getUsuarioEmail(),
+            texto = texto,
+            dataPublicacao = dataFormatada
+        )
+        val lista = getTodosComentarios().toMutableList()
+        lista.add(novo)
+        salvarTodosComentarios(lista)
+    }
+
+    private fun atualizarComentario(comentarioId: String, novoTexto: String) {
+        val lista = getTodosComentarios().toMutableList()
+        val index = lista.indexOfFirst { it.id == comentarioId }
+        if (index != -1) {
+            val c = lista[index]
+            lista[index] = c.copy(texto = novoTexto)
+            salvarTodosComentarios(lista)
+        }
+    }
+
+    private fun deletarComentario(comentarioId: String) {
+        val lista = getTodosComentarios().filter { it.id != comentarioId }
+        salvarTodosComentarios(lista)
     }
 
     // =========================================================
@@ -940,6 +1033,244 @@ class MainActivity : AppCompatActivity() {
                 mostrarDetalhes(evento)
             })
         }
+
+        // =========================================================
+        // SEÇÃO DE COMENTÁRIOS
+        // =========================================================
+
+        val cardComentarios = CardView(this).apply {
+            radius = dpToPx(16).toFloat()
+            cardElevation = dpToPx(4).toFloat()
+            setContentPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16))
+            useCompatPadding = true
+            setCardBackgroundColor(COLOR_CARD_BG)
+        }
+
+        val layoutComentarios = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        val tvComentariosTitulo = TextView(this).apply {
+            text = "💬 Comentários"
+            textSize = 18f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(COLOR_TEXT_MAIN)
+            setPadding(0, 0, 0, dpToPx(8))
+        }
+        layoutComentarios.addView(tvComentariosTitulo)
+
+        // Formulário de Comentário
+        val tvNovoComentarioRotulo = TextView(this).apply {
+            text = "Comentar como ${getUsuarioNome().ifEmpty { "Usuário" }}:"
+            textSize = 13f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(COLOR_TEXT_MUTED)
+            setPadding(0, 0, 0, dpToPx(4))
+        }
+        layoutComentarios.addView(tvNovoComentarioRotulo)
+
+        val inputComentario = criarCampoTexto("Escreva seu comentário sobre o evento...")
+        layoutComentarios.addView(inputComentario)
+
+        val btnPublicar = criarBotao("PUBLICAR COMENTÁRIO", primario = true) {
+            val textoComentario = inputComentario.text.toString().trim()
+            if (textoComentario.isEmpty()) {
+                Toast.makeText(this, "Digite algo para comentar.", Toast.LENGTH_SHORT).show()
+                return@criarBotao
+            }
+
+            adicionarComentario(evento.id, textoComentario)
+            Toast.makeText(this, "Comentário publicado!", Toast.LENGTH_SHORT).show()
+            mostrarDetalhes(evento)
+        }
+        layoutComentarios.addView(btnPublicar)
+
+        // Lista de Comentários
+        val comentariosLista = getComentariosDoEvento(evento.id)
+
+        if (comentariosLista.isEmpty()) {
+            val tvSemComentarios = TextView(this).apply {
+                text = "Seja o primeiro a comentar sobre este evento!"
+                textSize = 14f
+                setTextColor(COLOR_TEXT_MUTED)
+                setPadding(0, dpToPx(16), 0, dpToPx(8))
+                gravity = Gravity.CENTER
+            }
+            layoutComentarios.addView(tvSemComentarios)
+        } else {
+            val divisor = View(this).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    dpToPx(1)
+                ).apply {
+                    setMargins(0, dpToPx(12), 0, dpToPx(12))
+                }
+                setBackgroundColor(COLOR_STROKE)
+            }
+            layoutComentarios.addView(divisor)
+
+            val usuarioEmailAtual = getUsuarioEmail()
+
+            comentariosLista.forEach { com ->
+                val cardItem = CardView(this).apply {
+                    radius = dpToPx(12).toFloat()
+                    cardElevation = dpToPx(1).toFloat()
+                    setContentPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12))
+                    useCompatPadding = true
+                    setCardBackgroundColor(Color.parseColor("#F1F5F9"))
+                }
+
+                val itemLayout = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                }
+
+                // Cabeçalho do comentário (Nome + Data)
+                val rowHeader = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                }
+
+                val tvAutor = TextView(this).apply {
+                    text = "👤 ${com.autorNome}"
+                    textSize = 14f
+                    typeface = Typeface.DEFAULT_BOLD
+                    setTextColor(COLOR_TEXT_MAIN)
+                }
+                rowHeader.addView(tvAutor)
+
+                val spacer = View(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
+                }
+                rowHeader.addView(spacer)
+
+                val tvData = TextView(this).apply {
+                    text = com.dataPublicacao
+                    textSize = 12f
+                    setTextColor(COLOR_TEXT_MUTED)
+                }
+                rowHeader.addView(tvData)
+
+                itemLayout.addView(rowHeader)
+
+                // Texto do comentário
+                var emEdicao = false
+                val tvTexto = TextView(this).apply {
+                    text = com.texto
+                    textSize = 14f
+                    setTextColor(COLOR_TEXT_MAIN)
+                    setPadding(0, dpToPx(6), 0, dpToPx(8))
+                }
+                itemLayout.addView(tvTexto)
+
+                // Container de Edição Inline
+                val containerEdicao = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    visibility = View.GONE
+                }
+
+                val inputEdicao = criarCampoTexto("Editar comentário...", valorInicial = com.texto)
+                containerEdicao.addView(inputEdicao)
+
+                val rowBotoesEdicao = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                }
+
+                val btnSalvarEdicao = criarBotao("SALVAR", primario = true) {
+                    val novoTexto = inputEdicao.text.toString().trim()
+                    if (novoTexto.isEmpty()) {
+                        Toast.makeText(this@MainActivity, "O comentário não pode ficar vazio.", Toast.LENGTH_SHORT).show()
+                        return@criarBotao
+                    }
+                    atualizarComentario(com.id, novoTexto)
+                    Toast.makeText(this@MainActivity, "Comentário atualizado!", Toast.LENGTH_SHORT).show()
+                    mostrarDetalhes(evento)
+                }.apply {
+                    layoutParams = LinearLayout.LayoutParams(0, dpToPx(42), 1f).apply {
+                        setMargins(0, 0, dpToPx(4), 0)
+                    }
+                }
+                rowBotoesEdicao.addView(btnSalvarEdicao)
+
+                val btnCancelarEdicao = criarBotao("CANCELAR", primario = false) {
+                    emEdicao = false
+                    containerEdicao.visibility = View.GONE
+                    tvTexto.visibility = View.VISIBLE
+                }.apply {
+                    layoutParams = LinearLayout.LayoutParams(0, dpToPx(42), 1f).apply {
+                        setMargins(dpToPx(4), 0, 0, 0)
+                    }
+                }
+                rowBotoesEdicao.addView(btnCancelarEdicao)
+
+                containerEdicao.addView(rowBotoesEdicao)
+                itemLayout.addView(containerEdicao)
+
+                // Botões de Ação (somente para o próprio autor)
+                if (com.autorEmail.equals(usuarioEmailAtual, ignoreCase = true) && usuarioEmailAtual.isNotEmpty()) {
+                    val rowAcoes = LinearLayout(this).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.END
+                    }
+
+                    val btnEditar = TextView(this).apply {
+                        text = "✏️ Editar"
+                        textSize = 12f
+                        typeface = Typeface.DEFAULT_BOLD
+                        setTextColor(COLOR_PRIMARY_LIGHT)
+                        setPadding(dpToPx(8), dpToPx(4), dpToPx(12), dpToPx(4))
+                        setOnClickListener {
+                            emEdicao = !emEdicao
+                            if (emEdicao) {
+                                tvTexto.visibility = View.GONE
+                                containerEdicao.visibility = View.VISIBLE
+                            } else {
+                                tvTexto.visibility = View.VISIBLE
+                                containerEdicao.visibility = View.GONE
+                            }
+                        }
+                    }
+                    rowAcoes.addView(btnEditar)
+
+                    val btnExcluir = TextView(this).apply {
+                        text = "🗑️ Excluir"
+                        textSize = 12f
+                        typeface = Typeface.DEFAULT_BOLD
+                        setTextColor(Color.parseColor("#DC2626"))
+                        setPadding(dpToPx(8), dpToPx(4), dpToPx(4), dpToPx(4))
+                        setOnClickListener {
+                            deletarComentario(com.id)
+                            Toast.makeText(this@MainActivity, "Comentário excluído.", Toast.LENGTH_SHORT).show()
+                            mostrarDetalhes(evento)
+                        }
+                    }
+                    rowAcoes.addView(btnExcluir)
+
+                    itemLayout.addView(rowAcoes)
+                }
+
+                cardItem.addView(itemLayout)
+
+                val paramsItem = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, dpToPx(4), 0, dpToPx(6))
+                }
+
+                layoutComentarios.addView(cardItem, paramsItem)
+            }
+        }
+
+        cardComentarios.addView(layoutComentarios)
+
+        val paramsCardComentarios = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            setMargins(0, dpToPx(12), 0, dpToPx(16))
+        }
+
+        layout.addView(cardComentarios, paramsCardComentarios)
 
         layout.addView(criarBotao("VOLTAR", primario = false) {
             mostrarHome()
