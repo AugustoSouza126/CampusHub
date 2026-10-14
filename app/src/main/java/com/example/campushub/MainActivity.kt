@@ -14,6 +14,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import com.example.campushub.data.model.Evento
+import com.example.campushub.data.repository.AuthRepository
 import com.example.campushub.data.repository.EventRepository
 import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.components.UIComponents
@@ -29,7 +30,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         userRepo = UserPreferencesRepository(this)
 
-        if (userRepo.getUsuarioEmail().isNotEmpty()) {
+        if (AuthRepository.isUsuarioLogado()) {
             mostrarHome()
         } else {
             mostrarLogin()
@@ -89,6 +90,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun deslogarUsuario() {
+        AuthRepository.deslogar()
         mostrarLogin()
     }
 
@@ -116,25 +118,28 @@ class MainActivity : AppCompatActivity() {
             val emailDigitado = inputEmail.text.toString().trim()
             val senhaDigitada = inputSenha.text.toString()
 
-            val emailSalvo = userRepo.getUsuarioEmail()
-            val senhaSalva = userRepo.getUsuarioSenha()
-
             if (emailDigitado.isEmpty() || senhaDigitada.isEmpty()) {
                 Toast.makeText(this, "Preencha e-mail e senha para entrar.", Toast.LENGTH_SHORT).show()
                 return@criarBotao
             }
 
-            if (emailSalvo.isEmpty()) {
-                Toast.makeText(this, "Nenhuma conta cadastrada. Clique em 'CRIAR CONTA'.", Toast.LENGTH_LONG).show()
-                return@criarBotao
-            }
-
-            if (emailDigitado.equals(emailSalvo, ignoreCase = true) && senhaDigitada == senhaSalva) {
-                Toast.makeText(this, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show()
-                mostrarHome()
-            } else {
-                Toast.makeText(this, "E-mail ou senha incorretos.", Toast.LENGTH_SHORT).show()
-            }
+            AuthRepository.fazerLogin(
+                email = emailDigitado,
+                senha = senhaDigitada,
+                onSuccess = { user ->
+                    userRepo.salvarUsuario(
+                        nome = user.displayName ?: userRepo.getUsuarioNome(),
+                        matricula = userRepo.getUsuarioMatricula(),
+                        email = user.email ?: emailDigitado,
+                        senha = senhaDigitada
+                    )
+                    Toast.makeText(this, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show()
+                    mostrarHome()
+                },
+                onError = { error ->
+                    Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+                }
+            )
         })
 
         layout.addView(criarBotao("CRIAR NOVA CONTA", primario = false) {
@@ -221,9 +226,19 @@ class MainActivity : AppCompatActivity() {
                 return@criarBotao
             }
 
-            userRepo.salvarUsuario(nome, matricula, email, senha)
-            Toast.makeText(this, "Conta criada com sucesso!", Toast.LENGTH_SHORT).show()
-            mostrarHome()
+            AuthRepository.cadastrarUsuario(
+                email = email,
+                senha = senha,
+                nome = nome,
+                onSuccess = { _ ->
+                    userRepo.salvarUsuario(nome, matricula, email, senha)
+                    Toast.makeText(this, "Conta criada com sucesso no Firebase!", Toast.LENGTH_SHORT).show()
+                    mostrarHome()
+                },
+                onError = { error ->
+                    Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+                }
+            )
         })
 
         layout.addView(criarBotao("VOLTAR AO LOGIN", primario = false) {
@@ -252,10 +267,19 @@ class MainActivity : AppCompatActivity() {
 
             if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
                 Toast.makeText(this, "Digite um e-mail válido.", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "Instruções enviadas para $email!", Toast.LENGTH_LONG).show()
-                mostrarLogin()
+                return@criarBotao
             }
+
+            AuthRepository.enviarEmailRecuperacao(
+                email = email,
+                onSuccess = {
+                    Toast.makeText(this, "E-mail de redefinição enviado para $email!", Toast.LENGTH_LONG).show()
+                    mostrarLogin()
+                },
+                onError = { error ->
+                    Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+                }
+            )
         })
 
         layout.addView(criarBotao("VOLTAR", primario = false) {
