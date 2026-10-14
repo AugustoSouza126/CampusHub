@@ -42,7 +42,14 @@ data class Evento(
     val dataBadge: String,
     val horario: String,
     val local: String,
-    val vagas: Int
+    val vagas: Int,
+    val encerrado: Boolean = false
+)
+
+data class Avaliacao(
+    val eventoId: Int,
+    val autorEmail: String,
+    val nota: Int
 )
 
 class MainActivity : AppCompatActivity() {
@@ -65,6 +72,18 @@ class MainActivity : AppCompatActivity() {
 
     // Lista de eventos fixos da universidade
     private val listaEventos = listOf(
+        Evento(
+            0,
+            "Seminário de Boas-Vindas 2026",
+            "Acadêmico",
+            "Encontro de integração dos novos alunos para apresentação do campus e corpo docente.",
+            "01/10/2026",
+            "01 OUT",
+            "10:00",
+            "Auditório Central",
+            200,
+            encerrado = true
+        ),
         Evento(
             1,
             "Semana Acadêmica 2026",
@@ -284,6 +303,71 @@ class MainActivity : AppCompatActivity() {
     private fun deletarComentario(comentarioId: String) {
         val lista = getTodosComentarios().filter { it.id != comentarioId }
         salvarTodosComentarios(lista)
+    }
+
+    // =========================================================
+    // AVALIAÇÕES (Notas de 1 a 5 no SharedPreferences)
+    // =========================================================
+
+    private fun getTodasAvaliacoes(): List<Avaliacao> {
+        val jsonStr = prefs.getString("user_avaliacoes", "[]") ?: "[]"
+        val lista = mutableListOf<Avaliacao>()
+        try {
+            val jsonArray = JSONArray(jsonStr)
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                lista.add(
+                    Avaliacao(
+                        eventoId = obj.optInt("eventoId"),
+                        autorEmail = obj.optString("autorEmail"),
+                        nota = obj.optInt("nota")
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return lista
+    }
+
+    private fun salvarTodasAvaliacoes(lista: List<Avaliacao>) {
+        val jsonArray = JSONArray()
+        for (a in lista) {
+            val obj = JSONObject().apply {
+                put("eventoId", a.eventoId)
+                put("autorEmail", a.autorEmail)
+                put("nota", a.nota)
+            }
+            jsonArray.put(obj)
+        }
+        prefs.edit().putString("user_avaliacoes", jsonArray.toString()).apply()
+    }
+
+    private fun getAvaliacaoDoUsuario(eventoId: Int): Int? {
+        val email = getUsuarioEmail()
+        if (email.isEmpty()) return null
+        return getTodasAvaliacoes().find { it.eventoId == eventoId && it.autorEmail.equals(email, ignoreCase = true) }?.nota
+    }
+
+    private fun salvarOuAtualizarAvaliacao(eventoId: Int, nota: Int) {
+        val email = getUsuarioEmail()
+        if (email.isEmpty()) return
+        val lista = getTodasAvaliacoes().toMutableList()
+        val index = lista.indexOfFirst { it.eventoId == eventoId && it.autorEmail.equals(email, ignoreCase = true) }
+        if (index != -1) {
+            lista[index] = Avaliacao(eventoId, email, nota)
+        } else {
+            lista.add(Avaliacao(eventoId, email, nota))
+        }
+        salvarTodasAvaliacoes(lista)
+    }
+
+    private fun getMediaAvaliacoes(eventoId: Int): Pair<Float, Int> {
+        val avaliacoes = getTodasAvaliacoes().filter { it.eventoId == eventoId }
+        if (avaliacoes.isEmpty()) return Pair(0f, 0)
+        val soma = avaliacoes.sumOf { it.nota }
+        val media = soma.toFloat() / avaliacoes.size
+        return Pair(media, avaliacoes.size)
     }
 
     // =========================================================
@@ -884,7 +968,30 @@ class MainActivity : AppCompatActivity() {
         }
         layoutInterno.addView(tvTitulo)
 
-        // Status de Inscrição
+        // Status, Encerrado e Rating Badges
+        val rowBadges = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        if (evento.encerrado) {
+            val tvEncerrado = TextView(this).apply {
+                text = "🏁 ENCERRADO"
+                textSize = 11f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(Color.parseColor("#475569"))
+                background = criarShape(Color.parseColor("#E2E8F0"), Color.TRANSPARENT, 0, 6f)
+                setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3))
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, dpToPx(2), dpToPx(6), dpToPx(6))
+                }
+            }
+            rowBadges.addView(tvEncerrado)
+        }
+
         if (isInscrito(evento.id)) {
             val tvBadge = TextView(this).apply {
                 text = "✅ INSCRITO"
@@ -897,11 +1004,32 @@ class MainActivity : AppCompatActivity() {
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply {
+                    setMargins(0, dpToPx(2), dpToPx(6), dpToPx(6))
+                }
+            }
+            rowBadges.addView(tvBadge)
+        }
+
+        val (media, total) = getMediaAvaliacoes(evento.id)
+        if (total > 0) {
+            val tvMedia = TextView(this).apply {
+                text = String.format(Locale.getDefault(), "⭐ %.1f (%d)", media, total)
+                textSize = 11f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(Color.parseColor("#D97706"))
+                background = criarShape(Color.parseColor("#FEF3C7"), Color.TRANSPARENT, 0, 6f)
+                setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3))
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
                     setMargins(0, dpToPx(2), 0, dpToPx(6))
                 }
             }
-            layoutInterno.addView(tvBadge)
+            rowBadges.addView(tvMedia)
         }
+
+        layoutInterno.addView(rowBadges)
 
         // Local e Horário
         val tvInfo = TextView(this).apply {
@@ -1033,6 +1161,123 @@ class MainActivity : AppCompatActivity() {
                 mostrarDetalhes(evento)
             })
         }
+
+        // =========================================================
+        // SEÇÃO DE AVALIAÇÃO (NOTAS DE 1 A 5 ESTRELAS)
+        // =========================================================
+
+        val cardAvaliacao = CardView(this).apply {
+            radius = dpToPx(16).toFloat()
+            cardElevation = dpToPx(4).toFloat()
+            setContentPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16))
+            useCompatPadding = true
+            setCardBackgroundColor(COLOR_CARD_BG)
+        }
+
+        val layoutAvaliacao = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        val tvAvaliacaoTitulo = TextView(this).apply {
+            text = "⭐ Avaliação do Evento"
+            textSize = 18f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(COLOR_TEXT_MAIN)
+            setPadding(0, 0, 0, dpToPx(6))
+        }
+        layoutAvaliacao.addView(tvAvaliacaoTitulo)
+
+        val (mediaNotas, totalAvaliacoes) = getMediaAvaliacoes(evento.id)
+        val tvMediaTexto = TextView(this).apply {
+            text = if (totalAvaliacoes > 0) {
+                String.format(Locale.getDefault(), "Média do Evento: ⭐ %.1f / 5.0 (%d avaliações)", mediaNotas, totalAvaliacoes)
+            } else {
+                "Este evento ainda não possui avaliações."
+            }
+            textSize = 14f
+            setTextColor(COLOR_TEXT_MUTED)
+            setPadding(0, 0, 0, dpToPx(10))
+        }
+        layoutAvaliacao.addView(tvMediaTexto)
+
+        if (!evento.encerrado) {
+            val tvInfoNaoEncerrado = TextView(this).apply {
+                text = "ℹ️ A avaliação por estrelas estará disponível assim que o evento for encerrado."
+                textSize = 13f
+                setTextColor(COLOR_TEXT_MUTED)
+                setPadding(0, dpToPx(4), 0, dpToPx(4))
+            }
+            layoutAvaliacao.addView(tvInfoNaoEncerrado)
+        } else if (!inscrito) {
+            val tvInfoNaoInscrito = TextView(this).apply {
+                text = "⚠️ Apenas alunos inscritos neste evento podem avaliá-lo."
+                textSize = 13f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(Color.parseColor("#D97706"))
+                setPadding(0, dpToPx(4), 0, dpToPx(4))
+            }
+            layoutAvaliacao.addView(tvInfoNaoInscrito)
+        } else {
+            val notaAtual = getAvaliacaoDoUsuario(evento.id)
+            val tvSuaNota = TextView(this).apply {
+                text = if (notaAtual != null) "Sua nota atual: ⭐ $notaAtual / 5 (Clique abaixo para alterar)" else "Clique para atribuir sua nota (1 a 5 estrelas):"
+                textSize = 14f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(COLOR_PRIMARY_LIGHT)
+                setPadding(0, dpToPx(6), 0, dpToPx(8))
+            }
+            layoutAvaliacao.addView(tvSuaNota)
+
+            val rowEstrelas = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                weightSum = 5f
+            }
+
+            for (i in 1..5) {
+                val ehNotaSelecionada = (notaAtual == i)
+                val btnEstrela = MaterialButton(this).apply {
+                    text = "⭐ $i"
+                    textSize = 13f
+                    typeface = Typeface.DEFAULT_BOLD
+                    isAllCaps = false
+                    cornerRadius = dpToPx(10)
+
+                    if (ehNotaSelecionada) {
+                        setBackgroundColor(Color.parseColor("#F59E0B"))
+                        setTextColor(Color.WHITE)
+                    } else {
+                        setBackgroundColor(Color.WHITE)
+                        setTextColor(Color.parseColor("#D97706"))
+                        strokeColor = android.content.res.ColorStateList.valueOf(Color.parseColor("#FCD34D"))
+                        strokeWidth = dpToPx(1)
+                    }
+
+                    setOnClickListener {
+                        salvarOuAtualizarAvaliacao(evento.id, i)
+                        Toast.makeText(this@MainActivity, "Sua avaliação ($i estrelas) foi salva!", Toast.LENGTH_SHORT).show()
+                        mostrarDetalhes(evento)
+                    }
+
+                    layoutParams = LinearLayout.LayoutParams(0, dpToPx(44), 1f).apply {
+                        setMargins(dpToPx(2), 0, dpToPx(2), 0)
+                    }
+                }
+                rowEstrelas.addView(btnEstrela)
+            }
+
+            layoutAvaliacao.addView(rowEstrelas)
+        }
+
+        cardAvaliacao.addView(layoutAvaliacao)
+
+        val paramsCardAvaliacao = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            setMargins(0, dpToPx(12), 0, dpToPx(12))
+        }
+
+        layout.addView(cardAvaliacao, paramsCardAvaliacao)
 
         // =========================================================
         // SEÇÃO DE COMENTÁRIOS
