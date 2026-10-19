@@ -1,10 +1,17 @@
 package com.example.campushub.data.repository
 
 import com.example.campushub.data.model.Evento
+import com.google.firebase.firestore.CollectionReference
+import com.google.firebase.firestore.FirebaseFirestore
 
 object EventRepository {
 
-    val listaEventos = listOf(
+    private val db: FirebaseFirestore
+        get() = FirebaseFirestore.getInstance()
+
+    private const val COLLECTION_NAME = "eventos"
+
+    val listaEventosIniciais = listOf(
         Evento(
             0,
             "Seminário de Boas-Vindas 2026",
@@ -85,7 +92,107 @@ object EventRepository {
         )
     )
 
-    fun getEventoPorId(id: Int): Evento? {
-        return listaEventos.find { it.id == id }
+    fun getEventos(
+        onSuccess: (List<Evento>) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val collRef: CollectionReference = db.collection(COLLECTION_NAME)
+        collRef.get()
+            .addOnSuccessListener { querySnapshot ->
+                if (querySnapshot.isEmpty) {
+                    seearEventosIniciais {
+                        getEventos(onSuccess, onError)
+                    }
+                } else {
+                    val lista = mutableListOf<Evento>()
+                    for (doc in querySnapshot.documents) {
+                        val evento = doc.toObject(Evento::class.java)
+                        if (evento != null) {
+                            lista.add(evento)
+                        }
+                    }
+                    lista.sortBy { it.id }
+                    onSuccess(lista)
+                }
+            }
+            .addOnFailureListener { exception ->
+                val msg = exception.localizedMessage ?: "Erro ao buscar eventos no Firestore."
+                onError(msg)
+            }
+    }
+
+    fun adicionarEvento(
+        evento: Evento,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val docRef = db.collection(COLLECTION_NAME).document(evento.id.toString())
+        docRef.set(evento)
+            .addOnSuccessListener {
+                onSuccess()
+            }
+            .addOnFailureListener { exception ->
+                val msg = exception.localizedMessage ?: "Erro ao salvar evento no Firestore."
+                onError(msg)
+            }
+    }
+
+    fun atualizarEvento(
+        evento: Evento,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val docRef = db.collection(COLLECTION_NAME).document(evento.id.toString())
+        docRef.set(evento)
+            .addOnSuccessListener {
+                onSuccess()
+            }
+            .addOnFailureListener { exception ->
+                val msg = exception.localizedMessage ?: "Erro ao atualizar evento no Firestore."
+                onError(msg)
+            }
+    }
+
+    fun deletarEvento(
+        eventoId: Int,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val docRef = db.collection(COLLECTION_NAME).document(eventoId.toString())
+        docRef.delete()
+            .addOnSuccessListener {
+                onSuccess()
+            }
+            .addOnFailureListener { exception ->
+                val msg = exception.localizedMessage ?: "Erro ao excluir evento no Firestore."
+                onError(msg)
+            }
+    }
+
+    fun encerrarEvento(
+        eventoId: Int,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val docRef = db.collection(COLLECTION_NAME).document(eventoId.toString())
+        docRef.update("encerrado", true)
+            .addOnSuccessListener {
+                onSuccess()
+            }
+            .addOnFailureListener { exception ->
+                val msg = exception.localizedMessage ?: "Erro ao encerrar evento no Firestore."
+                onError(msg)
+            }
+    }
+
+    private fun seearEventosIniciais(onComplete: () -> Unit) {
+        val batch = db.batch()
+        for (e in listaEventosIniciais) {
+            val docRef = db.collection(COLLECTION_NAME).document(e.id.toString())
+            batch.set(docRef, e)
+        }
+        batch.commit().addOnCompleteListener {
+            onComplete()
+        }
     }
 }

@@ -25,10 +25,21 @@ import java.util.Locale
 class MainActivity : AppCompatActivity() {
 
     private lateinit var userRepo: UserPreferencesRepository
+    private var telaAtual = "HOME"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         userRepo = UserPreferencesRepository(this)
+
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (telaAtual != "HOME" && telaAtual != "LOGIN") {
+                    mostrarHome()
+                } else {
+                    finish()
+                }
+            }
+        })
 
         if (AuthRepository.isUsuarioLogado()) {
             mostrarHome()
@@ -292,12 +303,21 @@ class MainActivity : AppCompatActivity() {
     // =========================================================
 
     private fun mostrarHome() {
+        telaAtual = "HOME"
         val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "HOME")
 
         val nome = userRepo.getUsuarioNome()
         val saudacao = if (nome.isNotEmpty()) "Olá, $nome! 👋" else "Olá! 👋"
 
         layout.addView(criarHeaderBar(saudacao, "Confira os eventos da universidade e garanta sua vaga."))
+
+        layout.addView(criarBotao("➕ CRIAR NOVO EVENTO", primario = true) {
+            mostrarCriarEvento()
+        })
+
+        layout.addView(criarBotao("📢 EVENTOS CRIADOS POR MIM", primario = false) {
+            mostrarEventosCriados()
+        })
 
         var termoBusca = ""
         var situacaoSelecionada = "Todos"
@@ -331,31 +351,56 @@ class MainActivity : AppCompatActivity() {
         fun aplicarFiltros() {
             containerEventos.removeAllViews()
 
-            val filtrados = EventRepository.listaEventos.filter { evento ->
-                val bateTitulo = termoBusca.isBlank() || evento.titulo.contains(termoBusca, ignoreCase = true)
-                val bateCategoria = categoriaSelecionada == "Todas" || evento.categoria.equals(categoriaSelecionada, ignoreCase = true)
-                val bateSituacao = when (situacaoSelecionada) {
-                    "Próximos" -> !evento.encerrado
-                    "Encerrados" -> evento.encerrado
-                    else -> true
-                }
-                bateTitulo && bateCategoria && bateSituacao
+            val tvCarregando = TextView(this).apply {
+                text = "Carregando eventos do Firebase..."
+                textSize = 14f
+                setTextColor(AppColors.COLOR_TEXT_MUTED)
+                setPadding(0, dpToPx(20), 0, dpToPx(20))
+                gravity = Gravity.CENTER
             }
+            containerEventos.addView(tvCarregando)
 
-            if (filtrados.isEmpty()) {
-                val tvVazio = TextView(this).apply {
-                    text = "Nenhum evento encontrado com os filtros selecionados."
-                    textSize = 15f
-                    setTextColor(AppColors.COLOR_TEXT_MUTED)
-                    setPadding(0, dpToPx(20), 0, dpToPx(20))
-                    gravity = Gravity.CENTER
+            EventRepository.getEventos(
+                onSuccess = { lista ->
+                    containerEventos.removeAllViews()
+                    val filtrados = lista.filter { evento ->
+                        val bateTitulo = termoBusca.isBlank() || evento.titulo.contains(termoBusca, ignoreCase = true)
+                        val bateCategoria = categoriaSelecionada == "Todas" || evento.categoria.equals(categoriaSelecionada, ignoreCase = true)
+                        val bateSituacao = when (situacaoSelecionada) {
+                            "Próximos" -> !evento.encerrado
+                            "Encerrados" -> evento.encerrado
+                            else -> true
+                        }
+                        bateTitulo && bateCategoria && bateSituacao
+                    }
+
+                    if (filtrados.isEmpty()) {
+                        val tvVazio = TextView(this).apply {
+                            text = "Nenhum evento encontrado com os filtros selecionados."
+                            textSize = 15f
+                            setTextColor(AppColors.COLOR_TEXT_MUTED)
+                            setPadding(0, dpToPx(20), 0, dpToPx(20))
+                            gravity = Gravity.CENTER
+                        }
+                        containerEventos.addView(tvVazio)
+                    } else {
+                        filtrados.forEach { evento ->
+                            adicionarCardEvento(containerEventos, evento)
+                        }
+                    }
+                },
+                onError = { error ->
+                    containerEventos.removeAllViews()
+                    val tvErro = TextView(this).apply {
+                        text = "Erro ao carregar eventos do Firebase: $error"
+                        textSize = 14f
+                        setTextColor(Color.parseColor("#DC2626"))
+                        setPadding(0, dpToPx(20), 0, dpToPx(20))
+                        gravity = Gravity.CENTER
+                    }
+                    containerEventos.addView(tvErro)
                 }
-                containerEventos.addView(tvVazio)
-            } else {
-                filtrados.forEach { evento ->
-                    adicionarCardEvento(containerEventos, evento)
-                }
-            }
+            )
         }
 
         fun atualizarEstiloSituacao() {
@@ -643,452 +688,62 @@ class MainActivity : AppCompatActivity() {
     }
 
     // =========================================================
+    // TELA CRIAR / EDITAR EVENTO
+    // =========================================================
+
+    private fun mostrarCriarEvento(eventoParaEditar: Evento? = null) {
+        telaAtual = "CRIAR_EVENTO"
+        val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "HOME")
+
+        com.example.campushub.ui.screens.CreateEventScreen.construirTelaCriarEvento(
+            context = this,
+            layout = layout,
+            userRepo = userRepo,
+            eventoParaEditar = eventoParaEditar,
+            onSucesso = { mostrarHome() },
+            onVoltar = { mostrarHome() }
+        )
+    }
+
+    private fun mostrarEditarEvento(evento: Evento) {
+        mostrarCriarEvento(evento)
+    }
+
+    // =========================================================
+    // TELA EVENTOS CRIADOS POR MIM
+    // =========================================================
+
+    private fun mostrarEventosCriados() {
+        telaAtual = "EVENTOS_CRIADOS"
+        val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "HOME")
+
+        com.example.campushub.ui.screens.MyCreatedEventsScreen.construirTelaEventosCriados(
+            context = this,
+            layout = layout,
+            userRepo = userRepo,
+            onEditarEvento = { evento -> mostrarEditarEvento(evento) },
+            onCriarNovoEvento = { mostrarCriarEvento() },
+            onVerDetalhes = { evento -> mostrarDetalhes(evento) }
+        )
+    }
+
+    // =========================================================
     // TELA DE DETALHES DO EVENTO
     // =========================================================
 
     private fun mostrarDetalhes(evento: Evento) {
+        telaAtual = "DETALHES"
         val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "HOME")
 
-        layout.addView(criarHeaderBar(evento.titulo, "Categoria: ${evento.categoria}"))
-
-        val cardInfo = CardView(this).apply {
-            radius = dpToPx(16).toFloat()
-            cardElevation = dpToPx(4).toFloat()
-            setContentPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20))
-            useCompatPadding = true
-            setCardBackgroundColor(AppColors.COLOR_CARD_BG)
-        }
-
-        val innerInfo = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-
-        fun criarLinhaInfo(icone: String, titulo: String, valor: String) {
-            val tv = TextView(this).apply {
-                text = "$icone  $titulo: $valor"
-                textSize = 15f
-                setTextColor(AppColors.COLOR_TEXT_MAIN)
-                setPadding(0, dpToPx(6), 0, dpToPx(6))
-            }
-            innerInfo.addView(tv)
-        }
-
-        criarLinhaInfo("📅", "Data", evento.data)
-        criarLinhaInfo("⏰", "Horário", evento.horario)
-        criarLinhaInfo("📍", "Local", evento.local)
-        criarLinhaInfo("👥", "Vagas disponíveis", "${evento.vagas}")
-
-        val tvDescHeader = TextView(this).apply {
-            text = "Descrição do Evento"
-            textSize = 14f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(AppColors.COLOR_PRIMARY_LIGHT)
-            setPadding(0, dpToPx(16), 0, dpToPx(4))
-        }
-        innerInfo.addView(tvDescHeader)
-
-        val tvDesc = TextView(this).apply {
-            text = evento.descricao
-            textSize = 14f
-            setTextColor(AppColors.COLOR_TEXT_MAIN)
-        }
-        innerInfo.addView(tvDesc)
-
-        cardInfo.addView(innerInfo)
-        layout.addView(cardInfo)
-
-        val eFavorito = userRepo.isFavorito(evento.id)
-        if (eFavorito) {
-            layout.addView(criarBotao("💔 DESFAVORITAR EVENTO", primario = false) {
-                userRepo.removerFavorito(evento.id)
-                Toast.makeText(this, "Removido dos favoritos.", Toast.LENGTH_SHORT).show()
-                mostrarDetalhes(evento)
-            })
-        } else {
-            layout.addView(criarBotao("❤️ FAVORITAR EVENTO", primario = false) {
-                userRepo.salvarFavorito(evento.id)
-                Toast.makeText(this, "Adicionado aos favoritos!", Toast.LENGTH_SHORT).show()
-                mostrarDetalhes(evento)
-            })
-        }
-
-        val inscrito = userRepo.isInscrito(evento.id)
-
-        if (inscrito) {
-            val tvStatus = TextView(this).apply {
-                text = "✅ Sua inscrição está confirmada neste evento."
-                textSize = 14f
-                typeface = Typeface.DEFAULT_BOLD
-                setTextColor(AppColors.COLOR_GREEN_TEXT)
-                setPadding(0, dpToPx(16), 0, dpToPx(8))
-            }
-            layout.addView(tvStatus)
-
-            layout.addView(criarBotao("CANCELAR INSCRIÇÃO", primario = false, perigo = true) {
-                userRepo.removerInscricao(evento.id)
-                Toast.makeText(this, "Inscrição cancelada com sucesso.", Toast.LENGTH_SHORT).show()
-                mostrarDetalhes(evento)
-            })
-        } else {
-            layout.addView(criarBotao("INSCREVER-SE NO EVENTO") {
-                userRepo.salvarInscricao(evento.id)
-                Toast.makeText(this, "Inscrição realizada com sucesso!", Toast.LENGTH_SHORT).show()
-                mostrarDetalhes(evento)
-            })
-        }
-
-        // =========================================================
-        // SEÇÃO DE AVALIAÇÃO (NOTAS DE 1 A 5 ESTRELAS)
-        // =========================================================
-
-        val cardAvaliacao = CardView(this).apply {
-            radius = dpToPx(16).toFloat()
-            cardElevation = dpToPx(4).toFloat()
-            setContentPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16))
-            useCompatPadding = true
-            setCardBackgroundColor(AppColors.COLOR_CARD_BG)
-        }
-
-        val layoutAvaliacao = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-
-        val tvAvaliacaoTitulo = TextView(this).apply {
-            text = "⭐ Avaliação do Evento"
-            textSize = 18f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(AppColors.COLOR_TEXT_MAIN)
-            setPadding(0, 0, 0, dpToPx(6))
-        }
-        layoutAvaliacao.addView(tvAvaliacaoTitulo)
-
-        val (mediaNotas, totalAvaliacoes) = userRepo.getMediaAvaliacoes(evento.id)
-        val tvMediaTexto = TextView(this).apply {
-            text = if (totalAvaliacoes > 0) {
-                String.format(Locale.getDefault(), "Média do Evento: ⭐ %.1f / 5.0 (%d avaliações)", mediaNotas, totalAvaliacoes)
-            } else {
-                "Este evento ainda não possui avaliações."
-            }
-            textSize = 14f
-            setTextColor(AppColors.COLOR_TEXT_MUTED)
-            setPadding(0, 0, 0, dpToPx(10))
-        }
-        layoutAvaliacao.addView(tvMediaTexto)
-
-        if (!evento.encerrado) {
-            val tvInfoNaoEncerrado = TextView(this).apply {
-                text = "ℹ️ A avaliação por estrelas estará disponível assim que o evento for encerrado."
-                textSize = 13f
-                setTextColor(AppColors.COLOR_TEXT_MUTED)
-                setPadding(0, dpToPx(4), 0, dpToPx(4))
-            }
-            layoutAvaliacao.addView(tvInfoNaoEncerrado)
-        } else if (!inscrito) {
-            val tvInfoNaoInscrito = TextView(this).apply {
-                text = "⚠️ Apenas alunos inscritos neste evento podem avaliá-lo."
-                textSize = 13f
-                typeface = Typeface.DEFAULT_BOLD
-                setTextColor(Color.parseColor("#D97706"))
-                setPadding(0, dpToPx(4), 0, dpToPx(4))
-            }
-            layoutAvaliacao.addView(tvInfoNaoInscrito)
-        } else {
-            val notaAtual = userRepo.getAvaliacaoDoUsuario(evento.id)
-            val tvSuaNota = TextView(this).apply {
-                text = if (notaAtual != null) "Sua nota atual: ⭐ $notaAtual / 5 (Clique abaixo para alterar)" else "Clique para atribuir sua nota (1 a 5 estrelas):"
-                textSize = 14f
-                typeface = Typeface.DEFAULT_BOLD
-                setTextColor(AppColors.COLOR_PRIMARY_LIGHT)
-                setPadding(0, dpToPx(6), 0, dpToPx(8))
-            }
-            layoutAvaliacao.addView(tvSuaNota)
-
-            val rowEstrelas = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                weightSum = 5f
-            }
-
-            for (i in 1..5) {
-                val ehNotaSelecionada = (notaAtual == i)
-                val btnEstrela = MaterialButton(this).apply {
-                    text = "⭐ $i"
-                    textSize = 13f
-                    typeface = Typeface.DEFAULT_BOLD
-                    isAllCaps = false
-                    cornerRadius = dpToPx(10)
-
-                    if (ehNotaSelecionada) {
-                        setBackgroundColor(Color.parseColor("#F59E0B"))
-                        setTextColor(Color.WHITE)
-                    } else {
-                        setBackgroundColor(Color.WHITE)
-                        setTextColor(Color.parseColor("#D97706"))
-                        strokeColor = android.content.res.ColorStateList.valueOf(Color.parseColor("#FCD34D"))
-                        strokeWidth = dpToPx(1)
-                    }
-
-                    setOnClickListener {
-                        userRepo.salvarOuAtualizarAvaliacao(evento.id, i)
-                        Toast.makeText(this@MainActivity, "Sua avaliação ($i estrelas) foi salva!", Toast.LENGTH_SHORT).show()
-                        mostrarDetalhes(evento)
-                    }
-
-                    layoutParams = LinearLayout.LayoutParams(0, dpToPx(44), 1f).apply {
-                        setMargins(dpToPx(2), 0, dpToPx(2), 0)
-                    }
-                }
-                rowEstrelas.addView(btnEstrela)
-            }
-
-            layoutAvaliacao.addView(rowEstrelas)
-        }
-
-        cardAvaliacao.addView(layoutAvaliacao)
-
-        val paramsCardAvaliacao = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply {
-            setMargins(0, dpToPx(12), 0, dpToPx(12))
-        }
-
-        layout.addView(cardAvaliacao, paramsCardAvaliacao)
-
-        // =========================================================
-        // SEÇÃO DE COMENTÁRIOS
-        // =========================================================
-
-        val cardComentarios = CardView(this).apply {
-            radius = dpToPx(16).toFloat()
-            cardElevation = dpToPx(4).toFloat()
-            setContentPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16))
-            useCompatPadding = true
-            setCardBackgroundColor(AppColors.COLOR_CARD_BG)
-        }
-
-        val layoutComentarios = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-
-        val tvComentariosTitulo = TextView(this).apply {
-            text = "💬 Comentários"
-            textSize = 18f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(AppColors.COLOR_TEXT_MAIN)
-            setPadding(0, 0, 0, dpToPx(8))
-        }
-        layoutComentarios.addView(tvComentariosTitulo)
-
-        val tvNovoComentarioRotulo = TextView(this).apply {
-            text = "Comentar como ${userRepo.getUsuarioNome().ifEmpty { "Usuário" }}:"
-            textSize = 13f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(AppColors.COLOR_TEXT_MUTED)
-            setPadding(0, 0, 0, dpToPx(4))
-        }
-        layoutComentarios.addView(tvNovoComentarioRotulo)
-
-        val inputComentario = criarCampoTexto("Escreva seu comentário sobre o evento...")
-        layoutComentarios.addView(inputComentario)
-
-        val btnPublicar = criarBotao("PUBLICAR COMENTÁRIO", primario = true) {
-            val textoComentario = inputComentario.text.toString().trim()
-            if (textoComentario.isEmpty()) {
-                Toast.makeText(this, "Digite algo para comentar.", Toast.LENGTH_SHORT).show()
-                return@criarBotao
-            }
-
-            userRepo.adicionarComentario(evento.id, textoComentario)
-            Toast.makeText(this, "Comentário publicado!", Toast.LENGTH_SHORT).show()
-            mostrarDetalhes(evento)
-        }
-        layoutComentarios.addView(btnPublicar)
-
-        val comentariosLista = userRepo.getComentariosDoEvento(evento.id)
-
-        if (comentariosLista.isEmpty()) {
-            val tvSemComentarios = TextView(this).apply {
-                text = "Seja o primeiro a comentar sobre este evento!"
-                textSize = 14f
-                setTextColor(AppColors.COLOR_TEXT_MUTED)
-                setPadding(0, dpToPx(16), 0, dpToPx(8))
-                gravity = Gravity.CENTER
-            }
-            layoutComentarios.addView(tvSemComentarios)
-        } else {
-            val divisor = View(this).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    dpToPx(1)
-                ).apply {
-                    setMargins(0, dpToPx(12), 0, dpToPx(12))
-                }
-                setBackgroundColor(AppColors.COLOR_STROKE)
-            }
-            layoutComentarios.addView(divisor)
-
-            val usuarioEmailAtual = userRepo.getUsuarioEmail()
-
-            comentariosLista.forEach { com ->
-                val cardItem = CardView(this).apply {
-                    radius = dpToPx(12).toFloat()
-                    cardElevation = dpToPx(1).toFloat()
-                    setContentPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12))
-                    useCompatPadding = true
-                    setCardBackgroundColor(Color.parseColor("#F1F5F9"))
-                }
-
-                val itemLayout = LinearLayout(this).apply {
-                    orientation = LinearLayout.VERTICAL
-                }
-
-                val rowHeader = LinearLayout(this).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = Gravity.CENTER_VERTICAL
-                }
-
-                val tvAutor = TextView(this).apply {
-                    text = "👤 ${com.autorNome}"
-                    textSize = 14f
-                    typeface = Typeface.DEFAULT_BOLD
-                    setTextColor(AppColors.COLOR_TEXT_MAIN)
-                }
-                rowHeader.addView(tvAutor)
-
-                val spacer = View(this).apply {
-                    layoutParams = LinearLayout.LayoutParams(0, 1, 1f)
-                }
-                rowHeader.addView(spacer)
-
-                val tvData = TextView(this).apply {
-                    text = com.dataPublicacao
-                    textSize = 12f
-                    setTextColor(AppColors.COLOR_TEXT_MUTED)
-                }
-                rowHeader.addView(tvData)
-
-                itemLayout.addView(rowHeader)
-
-                var emEdicao = false
-                val tvTexto = TextView(this).apply {
-                    text = com.texto
-                    textSize = 14f
-                    setTextColor(AppColors.COLOR_TEXT_MAIN)
-                    setPadding(0, dpToPx(6), 0, dpToPx(8))
-                }
-                itemLayout.addView(tvTexto)
-
-                val containerEdicao = LinearLayout(this).apply {
-                    orientation = LinearLayout.VERTICAL
-                    visibility = View.GONE
-                }
-
-                val inputEdicao = criarCampoTexto("Editar comentário...", valorInicial = com.texto)
-                containerEdicao.addView(inputEdicao)
-
-                val rowBotoesEdicao = LinearLayout(this).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                }
-
-                val btnSalvarEdicao = criarBotao("SALVAR", primario = true) {
-                    val novoTexto = inputEdicao.text.toString().trim()
-                    if (novoTexto.isEmpty()) {
-                        Toast.makeText(this@MainActivity, "O comentário não pode ficar vazio.", Toast.LENGTH_SHORT).show()
-                        return@criarBotao
-                    }
-                    userRepo.atualizarComentario(com.id, novoTexto)
-                    Toast.makeText(this@MainActivity, "Comentário atualizado!", Toast.LENGTH_SHORT).show()
-                    mostrarDetalhes(evento)
-                }.apply {
-                    layoutParams = LinearLayout.LayoutParams(0, dpToPx(42), 1f).apply {
-                        setMargins(0, 0, dpToPx(4), 0)
-                    }
-                }
-                rowBotoesEdicao.addView(btnSalvarEdicao)
-
-                val btnCancelarEdicao = criarBotao("CANCELAR", primario = false) {
-                    emEdicao = false
-                    containerEdicao.visibility = View.GONE
-                    tvTexto.visibility = View.VISIBLE
-                }.apply {
-                    layoutParams = LinearLayout.LayoutParams(0, dpToPx(42), 1f).apply {
-                        setMargins(dpToPx(4), 0, 0, 0)
-                    }
-                }
-                rowBotoesEdicao.addView(btnCancelarEdicao)
-
-                containerEdicao.addView(rowBotoesEdicao)
-                itemLayout.addView(containerEdicao)
-
-                if (com.autorEmail.equals(usuarioEmailAtual, ignoreCase = true) && usuarioEmailAtual.isNotEmpty()) {
-                    val rowAcoes = LinearLayout(this).apply {
-                        orientation = LinearLayout.HORIZONTAL
-                        gravity = Gravity.END
-                    }
-
-                    val btnEditar = TextView(this).apply {
-                        text = "✏️ Editar"
-                        textSize = 12f
-                        typeface = Typeface.DEFAULT_BOLD
-                        setTextColor(AppColors.COLOR_PRIMARY_LIGHT)
-                        setPadding(dpToPx(8), dpToPx(4), dpToPx(12), dpToPx(4))
-                        setOnClickListener {
-                            emEdicao = !emEdicao
-                            if (emEdicao) {
-                                tvTexto.visibility = View.GONE
-                                containerEdicao.visibility = View.VISIBLE
-                            } else {
-                                tvTexto.visibility = View.VISIBLE
-                                containerEdicao.visibility = View.GONE
-                            }
-                        }
-                    }
-                    rowAcoes.addView(btnEditar)
-
-                    val btnExcluir = TextView(this).apply {
-                        text = "🗑️ Excluir"
-                        textSize = 12f
-                        typeface = Typeface.DEFAULT_BOLD
-                        setTextColor(Color.parseColor("#DC2626"))
-                        setPadding(dpToPx(8), dpToPx(4), dpToPx(4), dpToPx(4))
-                        setOnClickListener {
-                            userRepo.deletarComentario(com.id)
-                            Toast.makeText(this@MainActivity, "Comentário excluído.", Toast.LENGTH_SHORT).show()
-                            mostrarDetalhes(evento)
-                        }
-                    }
-                    rowAcoes.addView(btnExcluir)
-
-                    itemLayout.addView(rowAcoes)
-                }
-
-                cardItem.addView(itemLayout)
-
-                val paramsItem = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    setMargins(0, dpToPx(4), 0, dpToPx(6))
-                }
-
-                layoutComentarios.addView(cardItem, paramsItem)
-            }
-        }
-
-        cardComentarios.addView(layoutComentarios)
-
-        val paramsCardComentarios = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply {
-            setMargins(0, dpToPx(12), 0, dpToPx(16))
-        }
-
-        layout.addView(cardComentarios, paramsCardComentarios)
-
-        layout.addView(criarBotao("VOLTAR", primario = false) {
-            mostrarHome()
-        })
+        com.example.campushub.ui.screens.EventDetail.construirTelaDetalhes(
+            context = this,
+            layout = layout,
+            evento = evento,
+            userRepo = userRepo,
+            onEditarEvento = { eventoParaEditar -> mostrarEditarEvento(eventoParaEditar) },
+            onAtualizarTela = { mostrarDetalhes(evento) },
+            onVoltar = { mostrarHome() }
+        )
     }
 
     // =========================================================
@@ -1096,31 +751,46 @@ class MainActivity : AppCompatActivity() {
     // =========================================================
 
     private fun mostrarFavoritos() {
+        telaAtual = "FAVORITOS"
         val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "FAVORITOS")
 
         layout.addView(criarHeaderBar("Meus Favoritos", "Eventos que você salvou para acompanhar."))
 
-        val favoritosIds = userRepo.getFavoritos()
-        val favoritosLista = EventRepository.listaEventos.filter { favoritosIds.contains(it.id.toString()) }
-
-        if (favoritosLista.isEmpty()) {
-            val tvVazio = TextView(this).apply {
-                text = "Você ainda não favoritou nenhum evento.\nClique no ❤️ dos eventos para salvar aqui!"
-                textSize = 15f
-                setTextColor(AppColors.COLOR_TEXT_MUTED)
-                setPadding(0, dpToPx(30), 0, dpToPx(20))
-                gravity = Gravity.CENTER
-            }
-            layout.addView(tvVazio)
-
-            layout.addView(criarBotao("EXPLORAR EVENTOS DISPONÍVEIS") {
-                mostrarHome()
-            })
-        } else {
-            favoritosLista.forEach { evento ->
-                adicionarCardEvento(layout, evento)
-            }
+        val containerLista = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
         }
+        layout.addView(containerLista)
+
+        val favoritosIds = userRepo.getFavoritos()
+
+        EventRepository.getEventos(
+            onSuccess = { lista ->
+                containerLista.removeAllViews()
+                val favoritosLista = lista.filter { favoritosIds.contains(it.id.toString()) }
+
+                if (favoritosLista.isEmpty()) {
+                    val tvVazio = TextView(this).apply {
+                        text = "Você ainda não favoritou nenhum evento.\nClique no ❤️ dos eventos para salvar aqui!"
+                        textSize = 15f
+                        setTextColor(AppColors.COLOR_TEXT_MUTED)
+                        setPadding(0, dpToPx(30), 0, dpToPx(20))
+                        gravity = Gravity.CENTER
+                    }
+                    containerLista.addView(tvVazio)
+
+                    containerLista.addView(criarBotao("EXPLORAR EVENTOS DISPONÍVEIS") {
+                        mostrarHome()
+                    })
+                } else {
+                    favoritosLista.forEach { evento ->
+                        adicionarCardEvento(containerLista, evento)
+                    }
+                }
+            },
+            onError = { error ->
+                Toast.makeText(this, error, Toast.LENGTH_SHORT).show()
+            }
+        )
     }
 
     // =========================================================
@@ -1128,31 +798,46 @@ class MainActivity : AppCompatActivity() {
     // =========================================================
 
     private fun mostrarMeusEventos() {
+        telaAtual = "MEUS_EVENTOS"
         val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "MEUS_EVENTOS")
 
         layout.addView(criarHeaderBar("Minhas Inscrições", "Acompanhe todos os eventos em que você se inscreveu."))
 
-        val inscritosIds = userRepo.getInscricoes()
-        val meusEventosLista = EventRepository.listaEventos.filter { inscritosIds.contains(it.id.toString()) }
-
-        if (meusEventosLista.isEmpty()) {
-            val tvVazio = TextView(this).apply {
-                text = "Você ainda não está inscrito em nenhum evento."
-                textSize = 15f
-                setTextColor(AppColors.COLOR_TEXT_MUTED)
-                setPadding(0, dpToPx(30), 0, dpToPx(20))
-                gravity = Gravity.CENTER
-            }
-            layout.addView(tvVazio)
-
-            layout.addView(criarBotao("EXPLORAR EVENTOS DISPONÍVEIS") {
-                mostrarHome()
-            })
-        } else {
-            meusEventosLista.forEach { evento ->
-                adicionarCardEvento(layout, evento)
-            }
+        val containerLista = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
         }
+        layout.addView(containerLista)
+
+        val inscritosIds = userRepo.getInscricoes()
+
+        EventRepository.getEventos(
+            onSuccess = { lista ->
+                containerLista.removeAllViews()
+                val meusEventosLista = lista.filter { inscritosIds.contains(it.id.toString()) }
+
+                if (meusEventosLista.isEmpty()) {
+                    val tvVazio = TextView(this).apply {
+                        text = "Você ainda não está inscrito em nenhum evento."
+                        textSize = 15f
+                        setTextColor(AppColors.COLOR_TEXT_MUTED)
+                        setPadding(0, dpToPx(30), 0, dpToPx(20))
+                        gravity = Gravity.CENTER
+                    }
+                    containerLista.addView(tvVazio)
+
+                    containerLista.addView(criarBotao("EXPLORAR EVENTOS DISPONÍVEIS") {
+                        mostrarHome()
+                    })
+                } else {
+                    meusEventosLista.forEach { evento ->
+                        adicionarCardEvento(containerLista, evento)
+                    }
+                }
+            },
+            onError = { error ->
+                Toast.makeText(this, error, Toast.LENGTH_SHORT).show()
+            }
+        )
     }
 
     // =========================================================
@@ -1160,6 +845,7 @@ class MainActivity : AppCompatActivity() {
     // =========================================================
 
     private fun mostrarPerfil() {
+        telaAtual = "PERFIL"
         val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "PERFIL")
 
         layout.addView(criarHeaderBar("Meu Perfil", "Gerencie os dados da sua conta acadêmica."))
@@ -1215,6 +901,10 @@ class MainActivity : AppCompatActivity() {
             mostrarEditarPerfil()
         })
 
+        layout.addView(criarBotao("📢 EVENTOS CRIADOS POR MIM", primario = false) {
+            mostrarEventosCriados()
+        })
+
         layout.addView(criarBotao("SAIR DA CONTA", primario = false) {
             deslogarUsuario()
         })
@@ -1225,6 +915,7 @@ class MainActivity : AppCompatActivity() {
     // =========================================================
 
     private fun mostrarEditarPerfil() {
+        telaAtual = "EDITAR_PERFIL"
         val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "PERFIL")
 
         layout.addView(criarHeaderBar("Editar Perfil", "Atualize seus dados cadastrais."))
