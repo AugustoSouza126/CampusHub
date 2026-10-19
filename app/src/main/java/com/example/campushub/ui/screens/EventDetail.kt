@@ -206,6 +206,15 @@ object EventDetail {
                 Toast.makeText(context, "Inscrição cancelada com sucesso.", Toast.LENGTH_SHORT).show()
                 onAtualizarTela()
             })
+        } else if (evento.encerrado) {
+            val tvStatusEncerrado = TextView(context).apply {
+                text = "🏁 Inscrições encerradas para este evento."
+                textSize = 14f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(Color.parseColor("#64748B"))
+                setPadding(0, UIComponents.dpToPx(context, 16), 0, UIComponents.dpToPx(context, 8))
+            }
+            layout.addView(tvStatusEncerrado)
         } else {
             layout.addView(UIComponents.criarBotao(context, "INSCREVER-SE NO EVENTO") {
                 userRepo.salvarInscricao(evento.id)
