@@ -14,8 +14,15 @@ import com.example.campushub.ui.components.UIComponents
 import com.example.campushub.ui.theme.AppColors
 import java.util.Locale
 
+/**
+ * Responsável por construir a Tela de Eventos Criados pelo Usuário.
+ * Filtra no Firebase e exibe os eventos publicados com o e-mail do usuário logado,
+ */
 object MyCreatedEventsScreen {
 
+    /**
+     * Constrói e exibe a lista de eventos criados pelo usuário atual.
+     */
     fun construirTelaEventosCriados(
         context: Context,
         layout: LinearLayout,
@@ -31,6 +38,7 @@ object MyCreatedEventsScreen {
         }
         layout.addView(containerLista)
 
+        // Carrega a lista de eventos filtrados por e-mail do criador
         fun carregarLista() {
             containerLista.removeAllViews()
 
@@ -87,6 +95,9 @@ object MyCreatedEventsScreen {
         carregarLista()
     }
 
+    /**
+     * Constrói o Card específico com botões de gerenciamento (Editar, Encerrar, Excluir)
+     */
     private fun adicionarCardCriador(
         context: Context,
         parent: LinearLayout,
@@ -113,10 +124,11 @@ object MyCreatedEventsScreen {
             orientation = LinearLayout.VERTICAL
         }
 
-        // Categoria & Badges
+        // Cabeçalho
         val rowTop = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
+            weightSum = 1f
         }
 
         val tvCategoria = TextView(context).apply {
@@ -134,17 +146,13 @@ object MyCreatedEventsScreen {
         }
         rowTop.addView(spacer)
 
-        if (evento.encerrado) {
-            val tvEncerrado = TextView(context).apply {
-                text = "🏁 ENCERRADO"
-                textSize = 11f
-                typeface = Typeface.DEFAULT_BOLD
-                setTextColor(Color.parseColor("#475569"))
-                background = UIComponents.criarShape(context, Color.parseColor("#E2E8F0"), Color.TRANSPARENT, 0, 6f)
-                setPadding(UIComponents.dpToPx(context, 8), UIComponents.dpToPx(context, 3), UIComponents.dpToPx(context, 8), UIComponents.dpToPx(context, 3))
-            }
-            rowTop.addView(tvEncerrado)
+        val tvDataBadge = TextView(context).apply {
+            text = "📅 ${evento.dataBadge}"
+            textSize = 12f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(AppColors.COLOR_PRIMARY_LIGHT)
         }
+        rowTop.addView(tvDataBadge)
 
         layoutInterno.addView(rowTop)
 
@@ -154,45 +162,45 @@ object MyCreatedEventsScreen {
             textSize = 18f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(AppColors.COLOR_TEXT_MAIN)
-            setPadding(0, UIComponents.dpToPx(context, 8), 0, UIComponents.dpToPx(context, 4))
+            setPadding(0, UIComponents.dpToPx(context, 10), 0, UIComponents.dpToPx(context, 4))
         }
         layoutInterno.addView(tvTitulo)
 
-        // Info
+        // Local e Horário
         val tvInfo = TextView(context).apply {
-            text = "📅 ${evento.data} • 🕒 ${evento.horario}\n📍 ${evento.local} • 👥 ${evento.vagas} vagas"
+            text = "🕒 ${evento.horario}  •  📍 ${evento.local}"
             textSize = 13f
             setTextColor(AppColors.COLOR_TEXT_MUTED)
-            setPadding(0, 0, 0, UIComponents.dpToPx(context, 12))
+            setPadding(0, UIComponents.dpToPx(context, 2), 0, UIComponents.dpToPx(context, 8))
         }
         layoutInterno.addView(tvInfo)
 
-        // PAINEL DE AÇÕES DO CRIADOR (EDITAR, ENCERRAR, EXCLUIR)
-        val rowAcoes = LinearLayout(context).apply {
+        // Botoes de Ação Rápida (Ver, Editar, Encerrar, Excluir)
+        val rowBotoes = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
-            weightSum = 3f
+            weightSum = 4f
         }
 
-        val btnVerDetalhes = UIComponents.criarBotao(context, "🔍 VER", primario = false) {
+        val btnVer = UIComponents.criarBotao(context, "👁️", primario = true) {
             onVerDetalhes(evento)
         }.apply {
             layoutParams = LinearLayout.LayoutParams(0, UIComponents.dpToPx(context, 42), 1f).apply {
                 setMargins(0, 0, UIComponents.dpToPx(context, 2), 0)
             }
         }
-        rowAcoes.addView(btnVerDetalhes)
+        rowBotoes.addView(btnVer)
 
-        val btnEditar = UIComponents.criarBotao(context, "✏️ EDITAR", primario = true) {
+        val btnEditar = UIComponents.criarBotao(context, "✏️", primario = false) {
             onEditarEvento(evento)
         }.apply {
             layoutParams = LinearLayout.LayoutParams(0, UIComponents.dpToPx(context, 42), 1f).apply {
                 setMargins(UIComponents.dpToPx(context, 2), 0, UIComponents.dpToPx(context, 2), 0)
             }
         }
-        rowAcoes.addView(btnEditar)
+        rowBotoes.addView(btnEditar)
 
         if (!evento.encerrado) {
-            val btnEncerrar = UIComponents.criarBotao(context, "🏁 ENCERRAR", primario = false) {
+            val btnEncerrar = UIComponents.criarBotao(context, "🏁", primario = false) {
                 EventRepository.encerrarEvento(
                     evento.id,
                     onSuccess = {
@@ -205,32 +213,31 @@ object MyCreatedEventsScreen {
                 )
             }.apply {
                 layoutParams = LinearLayout.LayoutParams(0, UIComponents.dpToPx(context, 42), 1f).apply {
-                    setMargins(UIComponents.dpToPx(context, 2), 0, 0, 0)
+                    setMargins(UIComponents.dpToPx(context, 2), 0, UIComponents.dpToPx(context, 2), 0)
                 }
             }
-            rowAcoes.addView(btnEncerrar)
-        } else {
-            val btnExcluir = UIComponents.criarBotao(context, "🗑️ EXCLUIR", primario = false, perigo = true) {
-                EventRepository.deletarEvento(
-                    evento.id,
-                    onSuccess = {
-                        Toast.makeText(context, "Evento excluído do Firebase!", Toast.LENGTH_SHORT).show()
-                        onAtualizarLista()
-                    },
-                    onError = { error ->
-                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-                    }
-                )
-            }.apply {
-                layoutParams = LinearLayout.LayoutParams(0, UIComponents.dpToPx(context, 42), 1f).apply {
-                    setMargins(UIComponents.dpToPx(context, 2), 0, 0, 0)
-                }
-            }
-            rowAcoes.addView(btnExcluir)
+            rowBotoes.addView(btnEncerrar)
         }
 
-        layoutInterno.addView(rowAcoes)
+        val btnExcluir = UIComponents.criarBotao(context, "🗑️", primario = false, perigo = true) {
+            EventRepository.deletarEvento(
+                evento.id,
+                onSuccess = {
+                    Toast.makeText(context, "Evento excluído com sucesso!", Toast.LENGTH_SHORT).show()
+                    onAtualizarLista()
+                },
+                onError = { error ->
+                    Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                }
+            )
+        }.apply {
+            layoutParams = LinearLayout.LayoutParams(0, UIComponents.dpToPx(context, 42), 1f).apply {
+                setMargins(UIComponents.dpToPx(context, 2), 0, 0, 0)
+            }
+        }
+        rowBotoes.addView(btnExcluir)
 
+        layoutInterno.addView(rowBotoes)
         card.addView(layoutInterno)
 
         val params = LinearLayout.LayoutParams(

@@ -8,14 +8,21 @@ import android.view.View
 import android.widget.*
 import androidx.cardview.widget.CardView
 import com.example.campushub.data.model.Evento
+import com.example.campushub.data.repository.EventRepository
 import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.components.UIComponents
 import com.example.campushub.ui.theme.AppColors
 import com.google.android.material.button.MaterialButton
 import java.util.Locale
 
+/**
+  Responsável por construir a Tela de Detalhes do Evento.
+ */
 object EventDetail {
 
+    /**
+     * Constrói a interface completa da Tela de Detalhes do Evento.
+     */
     fun construirTelaDetalhes(
         context: Context,
         layout: LinearLayout,
@@ -27,7 +34,7 @@ object EventDetail {
     ) {
         layout.addView(UIComponents.criarHeaderBar(context, evento.titulo, "Categoria: ${evento.categoria}"))
 
-        // 1. CARD DE INFORMAÇÕES
+        // 1. CARD DE INFORMAÇÕES BÁSICAS DO EVENTO
         val cardInfo = CardView(context).apply {
             radius = UIComponents.dpToPx(context, 16).toFloat()
             cardElevation = UIComponents.dpToPx(context, 4).toFloat()
@@ -79,7 +86,7 @@ object EventDetail {
         cardInfo.addView(innerInfo)
         layout.addView(cardInfo)
 
-        // PAINEL DO CRIADOR DO EVENTO (EDITAR, ENCERRAR, EXCLUIR)
+        // PAINEL DO CRIADOR DO EVENTO (Opções de Editar, Encerrar e Excluir)
         val ehCriador = evento.criadorEmail.equals(userRepo.getUsuarioEmail(), ignoreCase = true) && userRepo.getUsuarioEmail().isNotEmpty()
         if (ehCriador) {
             val cardCriador = CardView(context).apply {
@@ -124,7 +131,7 @@ object EventDetail {
 
             if (!evento.encerrado) {
                 val btnEncerrar = UIComponents.criarBotao(context, "🏁 ENCERRAR", primario = false) {
-                    com.example.campushub.data.repository.EventRepository.encerrarEvento(
+                    EventRepository.encerrarEvento(
                         evento.id,
                         onSuccess = {
                             Toast.makeText(context, "Evento encerrado com sucesso!", Toast.LENGTH_SHORT).show()
@@ -143,7 +150,7 @@ object EventDetail {
             }
 
             val btnExcluir = UIComponents.criarBotao(context, "🗑️ EXCLUIR", primario = false, perigo = true) {
-                com.example.campushub.data.repository.EventRepository.deletarEvento(
+                EventRepository.deletarEvento(
                     evento.id,
                     onSuccess = {
                         Toast.makeText(context, "Evento excluído do Firebase!", Toast.LENGTH_SHORT).show()
@@ -173,7 +180,7 @@ object EventDetail {
             layout.addView(cardCriador, paramsCriador)
         }
 
-        // 2. BOTÃO FAVORITAR
+        // 2. BOTÃO DE FAVORITO
         val eFavorito = userRepo.isFavorito(evento.id)
         if (eFavorito) {
             layout.addView(UIComponents.criarBotao(context, "💔 DESFAVORITAR EVENTO", primario = false) {
@@ -189,7 +196,7 @@ object EventDetail {
             })
         }
 
-        // 3. BOTÃO INSCRIÇÃO
+        // 3. BOTÃO DE INSCRIÇÃO
         val inscrito = userRepo.isInscrito(evento.id)
         if (inscrito) {
             val tvStatus = TextView(context).apply {
@@ -223,10 +230,10 @@ object EventDetail {
             })
         }
 
-        // 4. SEÇÃO DE AVALIAÇÃO (NOTAS 1 A 5)
+        // 4. SEÇÃO DE AVALIAÇÃO (De 1 a 5 Estrelas)
         construirSecaoAvaliacao(context, layout, evento, userRepo, inscrito, onAtualizarTela)
 
-        // 5. SEÇÃO DE COMENTÁRIOS
+        // 5. SEÇÃO DE COMENTÁRIOS DOS ALUNOS
         construirSecaoComentarios(context, layout, evento, userRepo, onAtualizarTela)
 
         // 6. BOTÃO VOLTAR
@@ -235,6 +242,9 @@ object EventDetail {
         })
     }
 
+    /**
+      Constrói o bloco visual de Avaliação por Estrelas (1 a 5)
+     */
     private fun construirSecaoAvaliacao(
         context: Context,
         layout: LinearLayout,
@@ -362,6 +372,9 @@ object EventDetail {
         layout.addView(cardAvaliacao, paramsCardAvaliacao)
     }
 
+    /**
+      Constrói a seção de Comentários, permitindo publicar novos comentários,
+     */
     private fun construirSecaoComentarios(
         context: Context,
         layout: LinearLayout,

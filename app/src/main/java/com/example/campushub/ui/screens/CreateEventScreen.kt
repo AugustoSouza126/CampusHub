@@ -17,8 +17,16 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
+/**
+ * Responsável por construir a Tela de Criação e Edição de Eventos do CampusHub.
+ * Oferece seletores de data/hora (DatePicker e TimePicker), seleção de categoria,
+ * preenchimento de localização, vagas e persistência no Firebase Firestore.
+ */
 object CreateEventScreen {
 
+    /**
+      Constrói e exibe o formulário de criação ou edição de evento.
+     */
     fun construirTelaCriarEvento(
         context: Context,
         layout: LinearLayout,
@@ -36,12 +44,12 @@ object CreateEventScreen {
         var categoriaSelecionada = eventoParaEditar?.categoria ?: "Acadêmico"
         var ehEncerrado = eventoParaEditar?.encerrado ?: false
 
-        // 1. TÍTULO
+        // 1. TÍTULO DO EVENTO
         layout.addView(UIComponents.criarRotulo(context, "Título do Evento"))
         val inputTitulo = UIComponents.criarCampoTexto(context, "Ex: Workshop de Kotlin e Android", valorInicial = eventoParaEditar?.titulo ?: "")
         layout.addView(inputTitulo)
 
-        // 2. CATEGORIA (Pílulas de Seleção)
+        // 2. SELEÇÃO DE CATEGORIA (Pílulas Horizontais)
         layout.addView(UIComponents.criarRotulo(context, "Categoria"))
         val scrollCategorias = HorizontalScrollView(context).apply {
             isHorizontalScrollBarEnabled = false
@@ -104,7 +112,7 @@ object CreateEventScreen {
         val inputDescricao = UIComponents.criarCampoTexto(context, "Informe os detalhes, palestrantes e programação...", valorInicial = eventoParaEditar?.descricao ?: "")
         layout.addView(inputDescricao)
 
-        // 4. DATA E DATA BADGE (DatePicker no Calendário)
+        // 4. SELEÇÃO DE DATA (DatePicker Dialog)
         layout.addView(UIComponents.criarRotulo(context, "Data do Evento (Clique para selecionar no calendário)"))
         val inputData = UIComponents.criarCampoTexto(context, "📅 Clique para selecionar a data", valorInicial = eventoParaEditar?.data ?: "").apply {
             isFocusable = false
@@ -146,7 +154,7 @@ object CreateEventScreen {
 
         inputData.setOnClickListener { abrirDatePicker() }
 
-        // 5. HORÁRIO (TimePicker no Relógio)
+        // 5. SELEÇÃO DE HORÁRIO (TimePicker Dialog)
         layout.addView(UIComponents.criarRotulo(context, "Horário de Início (Clique para selecionar no relógio)"))
         val inputHorario = UIComponents.criarCampoTexto(context, "⏰ Clique para selecionar o horário", valorInicial = eventoParaEditar?.horario ?: "").apply {
             isFocusable = false
@@ -186,12 +194,12 @@ object CreateEventScreen {
         val inputLocal = UIComponents.criarCampoTexto(context, "Ex: Auditório Central / Lab 02", valorInicial = eventoParaEditar?.local ?: "")
         layout.addView(inputLocal)
 
-        // 7. VAGAS
+        // 7. QUANTIDADE DE VAGAS
         layout.addView(UIComponents.criarRotulo(context, "Quantidade de Vagas"))
         val inputVagas = UIComponents.criarCampoTexto(context, "Ex: 50", InputType.TYPE_CLASS_NUMBER, valorInicial = if (ehEdicao) eventoParaEditar?.vagas.toString() else "")
         layout.addView(inputVagas)
 
-        // 8. SITUAÇÃO DO EVENTO
+        // 8. CHECKBOX SITUAÇÃO (Encerrado)
         layout.addView(UIComponents.criarRotulo(context, "Situação"))
         val checkEncerrado = CheckBox(context).apply {
             text = "Este evento já ocorreu (marcar como Encerrado)"
@@ -205,7 +213,7 @@ object CreateEventScreen {
         }
         layout.addView(checkEncerrado)
 
-        // BOTÃO SALVAR / PUBLICAR
+        // BOTÃO PUBLICAR / SALVAR
         val textoBotaoSalvar = if (ehEdicao) "SALVAR ALTERAÇÕES NO FIREBASE" else "PUBLICAR EVENTO NO FIREBASE"
         val btnPublicar = UIComponents.criarBotao(context, textoBotaoSalvar, primario = true) {
             val titulo = inputTitulo.text.toString().trim()

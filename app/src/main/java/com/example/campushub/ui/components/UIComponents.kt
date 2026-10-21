@@ -12,12 +12,22 @@ import android.widget.*
 import com.example.campushub.ui.theme.AppColors
 import com.google.android.material.button.MaterialButton
 
+/**
+  Utilitário de componentes visuais reutilizáveis para a interface do aplicativo CampusHub.
+ */
+
 object UIComponents {
 
+    /**
+      Converte o valor em Densidade de Pixels (dp) para Pixels (px) reais do dispositivo.
+     */
     fun dpToPx(context: Context, dp: Int): Int {
         return (dp * context.resources.displayMetrics.density).toInt()
     }
 
+    /**
+      Cria um fundo desenhável (GradientDrawable) personalizado com cor de fundo,
+     */
     fun criarShape(
         context: Context,
         bgColor: Int,
@@ -37,6 +47,9 @@ object UIComponents {
         }
     }
 
+    /**
+      Cria e retorna um [TextView] estilizado para atuar como rótulo (Label) de campos de formulário.
+     */
     fun criarRotulo(context: Context, texto: String): TextView {
         return TextView(context).apply {
             this.text = texto
@@ -47,6 +60,9 @@ object UIComponents {
         }
     }
 
+    /**
+      Cria e retorna um [EditText] padronizado para entrada de dados (e-mail, senha, texto simples, etc.).
+     */
     fun criarCampoTexto(
         context: Context,
         hint: String,
@@ -73,6 +89,9 @@ object UIComponents {
         }
     }
 
+    /**
+      Cria e retorna um [Button] (MaterialButton) estilizado de acordo com o tipo visual:
+     */
     fun criarBotao(
         context: Context,
         texto: String,
@@ -107,6 +126,9 @@ object UIComponents {
         }
     }
 
+    /**
+      Cria a barra de cabeçalho (Header) superior com fundo azul, a marca CampusHub,
+     */
     fun criarHeaderBar(context: Context, titulo: String, subtitulo: String? = null): View {
         val header = LinearLayout(context).apply {
             tag = "HEADER_BAR"
@@ -151,6 +173,9 @@ object UIComponents {
         return header
     }
 
+    /**
+      Cria a barra de navegação inferior (Bottom Navigation) com ícones para alternar
+     */
     fun criarBottomNav(
         context: Context,
         abaAtiva: String,
@@ -208,6 +233,9 @@ object UIComponents {
         return navContainer
     }
 
+    /**
+     * Monta o layout base da tela contendo ScrollView, Container para os elementos do corpo
+     */
     fun criarTelaBase(
         context: Context,
         exibirBottomNav: Boolean = true,
