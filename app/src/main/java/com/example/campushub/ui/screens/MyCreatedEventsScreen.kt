@@ -148,9 +148,11 @@ object MyCreatedEventsScreen {
 
         val tvDataBadge = TextView(context).apply {
             text = "📅 ${evento.dataBadge}"
-            textSize = 12f
+            textSize = 11f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(AppColors.COLOR_PRIMARY_LIGHT)
+            setTextColor(Color.WHITE)
+            background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 8f)
+            setPadding(UIComponents.dpToPx(context, 10), UIComponents.dpToPx(context, 4), UIComponents.dpToPx(context, 10), UIComponents.dpToPx(context, 4))
         }
         rowTop.addView(tvDataBadge)
 

@@ -13,20 +13,21 @@ import com.example.campushub.ui.theme.AppColors
 import com.google.android.material.button.MaterialButton
 
 /**
-  Utilitário de componentes visuais reutilizáveis para a interface do aplicativo CampusHub.
+ * Utilitário de componentes visuais reutilizáveis para a interface do aplicativo CampusHub.
+ * Centraliza a criação de layouts, botões, campos de texto, cabeçalhos e navegação.
  */
-
 object UIComponents {
 
     /**
-      Converte o valor em Densidade de Pixels (dp) para Pixels (px) reais do dispositivo.
+     * Converte o valor em Densidade de Pixels (dp) para Pixels (px) reais do dispositivo.
      */
     fun dpToPx(context: Context, dp: Int): Int {
         return (dp * context.resources.displayMetrics.density).toInt()
     }
 
     /**
-      Cria um fundo desenhável (GradientDrawable) personalizado com cor de fundo,
+     * Cria um fundo desenhável (GradientDrawable) personalizado com cor de fundo,
+     * cor de contorno (stroke), largura do contorno e raio nos cantos.
      */
     fun criarShape(
         context: Context,
@@ -48,7 +49,7 @@ object UIComponents {
     }
 
     /**
-      Cria e retorna um [TextView] estilizado para atuar como rótulo (Label) de campos de formulário.
+     * Cria e retorna um [TextView] estilizado para atuar como rótulo (Label) de campos de formulário.
      */
     fun criarRotulo(context: Context, texto: String): TextView {
         return TextView(context).apply {
@@ -61,7 +62,7 @@ object UIComponents {
     }
 
     /**
-      Cria e retorna um [EditText] padronizado para entrada de dados (e-mail, senha, texto simples, etc.).
+     * Cria e retorna um [EditText] padronizado para entrada de dados (e-mail, senha, texto simples, etc.).
      */
     fun criarCampoTexto(
         context: Context,
@@ -90,7 +91,10 @@ object UIComponents {
     }
 
     /**
-      Cria e retorna um [Button] (MaterialButton) estilizado de acordo com o tipo visual:
+     * Cria e retorna um [Button] (MaterialButton) estilizado de acordo com o tipo visual:
+     * - Primário: Fundo Azul Real e texto BRANCO PURO.
+     * - Secundário: Fundo claro neutro e texto escuro grafite.
+     * - Perigo: Fundo avermelhado e texto vermelho para ações destrutivas.
      */
     fun criarBotao(
         context: Context,
@@ -105,16 +109,14 @@ object UIComponents {
             textSize = 14f
             typeface = Typeface.DEFAULT_BOLD
             isAllCaps = false
+            backgroundTintList = null // Desabilita o tint padrão do MaterialButton para garantir fundo e fonte branca customizados
 
             if (perigo) {
                 background = criarShape(context, Color.parseColor("#FEF2F2"), Color.parseColor("#EF4444"), 1, 12f)
                 setTextColor(Color.parseColor("#DC2626"))
-            } else if (primario) {
+            } else {
                 background = criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 12f)
                 setTextColor(Color.WHITE)
-            } else {
-                background = criarShape(context, Color.WHITE, AppColors.COLOR_PRIMARY_LIGHT, 1, 12f)
-                setTextColor(AppColors.COLOR_PRIMARY_LIGHT)
             }
 
             layoutParams = LinearLayout.LayoutParams(
@@ -127,7 +129,8 @@ object UIComponents {
     }
 
     /**
-      Cria a barra de cabeçalho (Header) superior com fundo azul, a marca CampusHub,
+     * Cria a barra de cabeçalho (Header) superior com fundo Azul Real vibrante, a marca CampusHub em branco,
+     * título principal e subtítulo em texto BRANCO PURO.
      */
     fun criarHeaderBar(context: Context, titulo: String, subtitulo: String? = null): View {
         val header = LinearLayout(context).apply {
@@ -147,7 +150,7 @@ object UIComponents {
             text = "🎓 CampusHub"
             textSize = 13f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.parseColor("#93C5FD"))
+            setTextColor(Color.WHITE)
             setPadding(0, 0, 0, dpToPx(context, 4))
         }
         header.addView(tvLogo)
@@ -164,7 +167,7 @@ object UIComponents {
             val tvSub = TextView(context).apply {
                 text = subtitulo
                 textSize = 14f
-                setTextColor(Color.parseColor("#E0E7FF"))
+                setTextColor(Color.WHITE)
                 setPadding(0, dpToPx(context, 4), 0, 0)
             }
             header.addView(tvSub)
@@ -174,7 +177,8 @@ object UIComponents {
     }
 
     /**
-      Cria a barra de navegação inferior (Bottom Navigation) com ícones para alternar
+     * Cria a barra de navegação inferior (Bottom Navigation) com ícones para alternar
+     * entre as abas principais (Home, Favoritos, Inscrições, Perfil).
      */
     fun criarBottomNav(
         context: Context,
@@ -217,7 +221,7 @@ object UIComponents {
                 text = rotulo
                 textSize = 11f
                 typeface = if (ehAtivo) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
-                setTextColor(if (ehAtivo) AppColors.COLOR_PRIMARY_LIGHT else AppColors.COLOR_TEXT_MUTED)
+                setTextColor(if (ehAtivo) AppColors.COLOR_PRIMARY else AppColors.COLOR_TEXT_MUTED)
                 gravity = Gravity.CENTER
             }
             item.addView(tvTexto)
@@ -235,6 +239,8 @@ object UIComponents {
 
     /**
      * Monta o layout base da tela contendo ScrollView, Container para os elementos do corpo
+     * e insere opcionalmente a barra de navegação inferior.
+     * Retorna o FrameLayout raiz e o LinearLayout interno onde os componentes são adicionados.
      */
     fun criarTelaBase(
         context: Context,

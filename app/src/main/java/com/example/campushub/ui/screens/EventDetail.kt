@@ -1,8 +1,10 @@
 package com.example.campushub.ui.screens
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
+import android.net.Uri
 import android.view.Gravity
 import android.view.View
 import android.widget.*
@@ -10,13 +12,18 @@ import androidx.cardview.widget.CardView
 import com.example.campushub.data.model.Evento
 import com.example.campushub.data.repository.EventRepository
 import com.example.campushub.data.repository.UserPreferencesRepository
+import com.example.campushub.ui.components.MapViewComponent
 import com.example.campushub.ui.components.UIComponents
 import com.example.campushub.ui.theme.AppColors
 import com.google.android.material.button.MaterialButton
 import java.util.Locale
 
 /**
-  Responsável por construir a Tela de Detalhes do Evento.
+ * Responsável por construir a Tela de Detalhes do Evento.
+ * Exibe informações completas (data, horário, local, endereço, mapa MapLibre),
+ * painel exclusivo para o criador do evento (editar/encerrar/excluir),
+ * gerencia inscrição e favoritos, e oferece seções interativas de avaliação (1 a 5 estrelas)
+ * e comentários dos alunos.
  */
 object EventDetail {
 
@@ -65,13 +72,16 @@ object EventDetail {
         criarLinhaInfo("📅", "Data", evento.data)
         criarLinhaInfo("⏰", "Horário", evento.horario)
         criarLinhaInfo("📍", "Local", evento.local)
+        if (evento.endereco.isNotEmpty()) {
+            criarLinhaInfo("🏠", "Endereço", evento.endereco)
+        }
         criarLinhaInfo("👥", "Vagas disponíveis", "${evento.vagas}")
 
         val tvDescHeader = TextView(context).apply {
             text = "Descrição do Evento"
             textSize = 14f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(AppColors.COLOR_PRIMARY_LIGHT)
+            setTextColor(AppColors.COLOR_TEXT_MAIN)
             setPadding(0, UIComponents.dpToPx(context, 16), 0, UIComponents.dpToPx(context, 4))
         }
         innerInfo.addView(tvDescHeader)
@@ -85,6 +95,82 @@ object EventDetail {
 
         cardInfo.addView(innerInfo)
         layout.addView(cardInfo)
+
+        // 2. CARD DO MAPA (MAPLIBRE SDK)
+        val cardMapa = CardView(context).apply {
+            radius = UIComponents.dpToPx(context, 16).toFloat()
+            cardElevation = UIComponents.dpToPx(context, 4).toFloat()
+            setContentPadding(
+                UIComponents.dpToPx(context, 16),
+                UIComponents.dpToPx(context, 16),
+                UIComponents.dpToPx(context, 16),
+                UIComponents.dpToPx(context, 16)
+            )
+            useCompatPadding = true
+            setCardBackgroundColor(AppColors.COLOR_CARD_BG)
+        }
+
+        val layoutMapa = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        val tvMapaHeader = TextView(context).apply {
+            text = "🗺️ Localização no Mapa"
+            textSize = 16f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(AppColors.COLOR_TEXT_MAIN)
+            setPadding(0, 0, 0, UIComponents.dpToPx(context, 4))
+        }
+        layoutMapa.addView(tvMapaHeader)
+
+        val tvEnderecoSub = TextView(context).apply {
+            text = if (evento.endereco.isNotEmpty()) {
+                "📍 ${evento.local}\n🏠 ${evento.endereco}"
+            } else {
+                "📍 ${evento.local}"
+            }
+            textSize = 13f
+            setTextColor(AppColors.COLOR_TEXT_MUTED)
+            setPadding(0, 0, 0, UIComponents.dpToPx(context, 8))
+        }
+        layoutMapa.addView(tvEnderecoSub)
+
+        // Renderiza o mapa interativo do MapLibre centralizado no ponto do evento
+        val lat = if (evento.latitude != 0.0) evento.latitude else -23.55052
+        val lng = if (evento.longitude != 0.0) evento.longitude else -46.633308
+
+        val mapaView = MapViewComponent.criarMapaLocalizacao(
+            context = context,
+            latitude = lat,
+            longitude = lng,
+            titulo = evento.titulo,
+            subtitulo = evento.local,
+            alturaDp = 220
+        )
+        layoutMapa.addView(mapaView)
+
+        // Botão para abrir a rota em aplicativo de mapa externo
+        val btnAbrirExterno = UIComponents.criarBotao(context, "🧭 ABRIR ROTA NO MAPA EXTERNO", primario = false) {
+            val uri = Uri.parse("geo:$lat,$lng?q=$lat,$lng(${Uri.encode(evento.titulo)})")
+            val intent = Intent(Intent.ACTION_VIEW, uri)
+            try {
+                context.startActivity(intent)
+            } catch (_: Exception) {
+                val webUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=$lat,$lng")
+                context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
+            }
+        }
+        layoutMapa.addView(btnAbrirExterno)
+
+        cardMapa.addView(layoutMapa)
+
+        val paramsCardMapa = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            setMargins(0, UIComponents.dpToPx(context, 10), 0, UIComponents.dpToPx(context, 10))
+        }
+        layout.addView(cardMapa, paramsCardMapa)
 
         // PAINEL DO CRIADOR DO EVENTO (Opções de Editar, Encerrar e Excluir)
         val ehCriador = evento.criadorEmail.equals(userRepo.getUsuarioEmail(), ignoreCase = true) && userRepo.getUsuarioEmail().isNotEmpty()
@@ -180,7 +266,7 @@ object EventDetail {
             layout.addView(cardCriador, paramsCriador)
         }
 
-        // 2. BOTÃO DE FAVORITO
+        // 3. BOTÃO DE FAVORITO
         val eFavorito = userRepo.isFavorito(evento.id)
         if (eFavorito) {
             layout.addView(UIComponents.criarBotao(context, "💔 DESFAVORITAR EVENTO", primario = false) {
@@ -196,7 +282,7 @@ object EventDetail {
             })
         }
 
-        // 3. BOTÃO DE INSCRIÇÃO
+        // 4. BOTÃO DE INSCRIÇÃO
         val inscrito = userRepo.isInscrito(evento.id)
         if (inscrito) {
             val tvStatus = TextView(context).apply {
@@ -230,20 +316,21 @@ object EventDetail {
             })
         }
 
-        // 4. SEÇÃO DE AVALIAÇÃO (De 1 a 5 Estrelas)
+        // 5. SEÇÃO DE AVALIAÇÃO (De 1 a 5 Estrelas)
         construirSecaoAvaliacao(context, layout, evento, userRepo, inscrito, onAtualizarTela)
 
-        // 5. SEÇÃO DE COMENTÁRIOS DOS ALUNOS
+        // 6. SEÇÃO DE COMENTÁRIOS DOS ALUNOS
         construirSecaoComentarios(context, layout, evento, userRepo, onAtualizarTela)
 
-        // 6. BOTÃO VOLTAR
+        // 7. BOTÃO VOLTAR
         layout.addView(UIComponents.criarBotao(context, "VOLTAR", primario = false) {
             onVoltar()
         })
     }
 
     /**
-      Constrói o bloco visual de Avaliação por Estrelas (1 a 5)
+     * Constrói o bloco visual de Avaliação por Estrelas (1 a 5), permitindo que
+     * alunos inscritos atribuam ou alterem sua nota após o encerramento do evento.
      */
     private fun construirSecaoAvaliacao(
         context: Context,
@@ -315,7 +402,7 @@ object EventDetail {
                 text = if (notaAtual != null) "Sua nota atual: ⭐ $notaAtual / 5 (Clique abaixo para alterar)" else "Clique para atribuir sua nota (1 a 5 estrelas):"
                 textSize = 14f
                 typeface = Typeface.DEFAULT_BOLD
-                setTextColor(AppColors.COLOR_PRIMARY_LIGHT)
+                setTextColor(AppColors.COLOR_TEXT_MAIN)
                 setPadding(0, UIComponents.dpToPx(context, 6), 0, UIComponents.dpToPx(context, 8))
             }
             layoutAvaliacao.addView(tvSuaNota)
@@ -333,6 +420,7 @@ object EventDetail {
                     typeface = Typeface.DEFAULT_BOLD
                     isAllCaps = false
                     cornerRadius = UIComponents.dpToPx(context, 10)
+                    backgroundTintList = null
 
                     if (ehNotaSelecionada) {
                         setBackgroundColor(Color.parseColor("#F59E0B"))
@@ -373,7 +461,8 @@ object EventDetail {
     }
 
     /**
-      Constrói a seção de Comentários, permitindo publicar novos comentários,
+     * Constrói a seção de Comentários, permitindo publicar novos comentários,
+     * listar comentários existentes e dar permissão para editar/excluir comentários próprios.
      */
     private fun construirSecaoComentarios(
         context: Context,
@@ -564,7 +653,7 @@ object EventDetail {
                         text = "✏️ Editar"
                         textSize = 12f
                         typeface = Typeface.DEFAULT_BOLD
-                        setTextColor(AppColors.COLOR_PRIMARY_LIGHT)
+                        setTextColor(AppColors.COLOR_TEXT_MAIN)
                         setPadding(
                             UIComponents.dpToPx(context, 8),
                             UIComponents.dpToPx(context, 4),

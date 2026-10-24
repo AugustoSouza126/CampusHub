@@ -165,6 +165,7 @@ object HomeScreen {
                 typeface = Typeface.DEFAULT_BOLD
                 isAllCaps = false
                 cornerRadius = dpToPx(10)
+                backgroundTintList = null
                 setOnClickListener {
                     situacaoSelecionada = opcao
                     atualizarEstiloSituacao()
@@ -204,7 +205,7 @@ object HomeScreen {
                 val cat = categoriasOpcoes[index]
                 val selecionada = (cat == categoriaSelecionada)
                 if (selecionada) {
-                    btn.background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY_LIGHT, Color.TRANSPARENT, 0, 20f)
+                    btn.background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 20f)
                     btn.setTextColor(Color.WHITE)
                 } else {
                     btn.background = UIComponents.criarShape(context, Color.WHITE, AppColors.COLOR_STROKE, 1, 20f)
@@ -220,6 +221,7 @@ object HomeScreen {
                 typeface = Typeface.DEFAULT_BOLD
                 isAllCaps = false
                 cornerRadius = dpToPx(20)
+                backgroundTintList = null
                 setOnClickListener {
                     categoriaSelecionada = cat
                     atualizarEstiloCategorias()

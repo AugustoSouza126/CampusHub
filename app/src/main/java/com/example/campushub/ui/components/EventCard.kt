@@ -67,9 +67,11 @@ object EventCard {
 
         val tvDataBadge = TextView(context).apply {
             text = "📅 ${evento.dataBadge}"
-            textSize = 12f
+            textSize = 11f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(AppColors.COLOR_PRIMARY_LIGHT)
+            setTextColor(Color.WHITE)
+            background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 8f)
+            setPadding(dpToPx(10), dpToPx(4), dpToPx(10), dpToPx(4))
         }
         rowTop.addView(tvDataBadge)
 
@@ -166,9 +168,14 @@ object EventCard {
 
         layoutInterno.addView(rowBadges)
 
-        // Local e Horário
+        // Local, Horário e Endereço
         val tvInfo = TextView(context).apply {
-            text = "🕒 ${evento.horario}  •  📍 ${evento.local}"
+            val localTexto = if (evento.endereco.isNotEmpty()) {
+                "🕒 ${evento.horario}  •  📍 ${evento.local}\n🏠 ${evento.endereco}"
+            } else {
+                "🕒 ${evento.horario}  •  📍 ${evento.local}"
+            }
+            text = localTexto
             textSize = 13f
             setTextColor(AppColors.COLOR_TEXT_MUTED)
             setPadding(0, dpToPx(2), 0, dpToPx(8))

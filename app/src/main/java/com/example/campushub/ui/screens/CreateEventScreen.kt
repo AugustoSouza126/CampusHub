@@ -10,6 +10,7 @@ import android.widget.*
 import com.example.campushub.data.model.Evento
 import com.example.campushub.data.repository.EventRepository
 import com.example.campushub.data.repository.UserPreferencesRepository
+import com.example.campushub.ui.components.MapViewComponent
 import com.example.campushub.ui.components.UIComponents
 import com.example.campushub.ui.theme.AppColors
 import com.google.android.material.button.MaterialButton
@@ -20,12 +21,14 @@ import java.util.Locale
 /**
  * Responsável por construir a Tela de Criação e Edição de Eventos do CampusHub.
  * Oferece seletores de data/hora (DatePicker e TimePicker), seleção de categoria,
- * preenchimento de localização, vagas e persistência no Firebase Firestore.
+ * preenchimento de endereço e coordenadas (Latitude e Longitude), pré-visualização no mapa MapLibre
+ * e persistência no Firebase Firestore.
  */
 object CreateEventScreen {
 
     /**
-      Constrói e exibe o formulário de criação ou edição de evento.
+     * Constrói e exibe o formulário de criação ou edição de evento.
+     * Se [eventoParaEditar] for fornecido, a tela é preenchida com os dados atuais do evento.
      */
     fun construirTelaCriarEvento(
         context: Context,
@@ -73,7 +76,7 @@ object CreateEventScreen {
                 val cat = categoriasOpcoes[index]
                 val selecionada = (cat == categoriaSelecionada)
                 if (selecionada) {
-                    btn.background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY_LIGHT, Color.TRANSPARENT, 0, 20f)
+                    btn.background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 20f)
                     btn.setTextColor(Color.WHITE)
                 } else {
                     btn.background = UIComponents.criarShape(context, Color.WHITE, AppColors.COLOR_STROKE, 1, 20f)
@@ -89,6 +92,7 @@ object CreateEventScreen {
                 typeface = Typeface.DEFAULT_BOLD
                 isAllCaps = false
                 cornerRadius = UIComponents.dpToPx(context, 20)
+                backgroundTintList = null
                 setOnClickListener {
                     categoriaSelecionada = cat
                     atualizarEstiloCategorias()
@@ -189,17 +193,58 @@ object CreateEventScreen {
 
         inputHorario.setOnClickListener { abrirTimePicker() }
 
-        // 6. LOCAL
-        layout.addView(UIComponents.criarRotulo(context, "Local do Evento"))
+        // 6. LOCAL E ENDEREÇO
+        layout.addView(UIComponents.criarRotulo(context, "Local / Prédio (Ex: Auditório Central)"))
         val inputLocal = UIComponents.criarCampoTexto(context, "Ex: Auditório Central / Lab 02", valorInicial = eventoParaEditar?.local ?: "")
         layout.addView(inputLocal)
 
-        // 7. QUANTIDADE DE VAGAS
+        layout.addView(UIComponents.criarRotulo(context, "Endereço Completo"))
+        val inputEndereco = UIComponents.criarCampoTexto(
+            context,
+            "Ex: Av. Prof. Luciano Gualberto, 380 - Cidade Universitária",
+            valorInicial = eventoParaEditar?.endereco ?: "Av. Prof. Luciano Gualberto, 380 - Cidade Universitária"
+        )
+        layout.addView(inputEndereco)
+
+        // 7. COORDENADAS PARA O MAPA (LATITUDE E LONGITUDE)
+        layout.addView(UIComponents.criarRotulo(context, "Latitude no Mapa"))
+        val inputLat = UIComponents.criarCampoTexto(
+            context,
+            "Ex: -23.5583",
+            InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_NUMBER_FLAG_SIGNED,
+            valorInicial = if (ehEdicao) eventoParaEditar?.latitude.toString() else "-23.5583"
+        )
+        layout.addView(inputLat)
+
+        layout.addView(UIComponents.criarRotulo(context, "Longitude no Mapa"))
+        val inputLng = UIComponents.criarCampoTexto(
+            context,
+            "Ex: -46.7314",
+            InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_NUMBER_FLAG_SIGNED,
+            valorInicial = if (ehEdicao) eventoParaEditar?.longitude.toString() else "-46.7314"
+        )
+        layout.addView(inputLng)
+
+        // Pré-visualização do Mapa MapLibre
+        layout.addView(UIComponents.criarRotulo(context, "🗺️ Pré-visualização do Local no Mapa (MapLibre)"))
+        val latPreview = eventoParaEditar?.latitude ?: -23.5583
+        val lngPreview = eventoParaEditar?.longitude ?: -46.7314
+        val mapaPreview = MapViewComponent.criarMapaLocalizacao(
+            context = context,
+            latitude = latPreview,
+            longitude = lngPreview,
+            titulo = eventoParaEditar?.titulo?.ifEmpty { "Local do Evento" } ?: "Local do Evento",
+            subtitulo = eventoParaEditar?.local?.ifEmpty { "Campus" } ?: "Campus",
+            alturaDp = 180
+        )
+        layout.addView(mapaPreview)
+
+        // 8. QUANTIDADE DE VAGAS
         layout.addView(UIComponents.criarRotulo(context, "Quantidade de Vagas"))
         val inputVagas = UIComponents.criarCampoTexto(context, "Ex: 50", InputType.TYPE_CLASS_NUMBER, valorInicial = if (ehEdicao) eventoParaEditar?.vagas.toString() else "")
         layout.addView(inputVagas)
 
-        // 8. CHECKBOX SITUAÇÃO (Encerrado)
+        // 9. CHECKBOX SITUAÇÃO (Encerrado)
         layout.addView(UIComponents.criarRotulo(context, "Situação"))
         val checkEncerrado = CheckBox(context).apply {
             text = "Este evento já ocorreu (marcar como Encerrado)"
@@ -222,6 +267,9 @@ object CreateEventScreen {
             var dataBadge = inputDataBadge.text.toString().trim()
             val horario = inputHorario.text.toString().trim()
             val local = inputLocal.text.toString().trim()
+            val endereco = inputEndereco.text.toString().trim()
+            val latStr = inputLat.text.toString().trim()
+            val lngStr = inputLng.text.toString().trim()
             val vagasStr = inputVagas.text.toString().trim()
 
             if (titulo.isEmpty()) {
@@ -258,6 +306,8 @@ object CreateEventScreen {
                 return@criarBotao
             }
 
+            val latitude = latStr.toDoubleOrNull() ?: -23.5583
+            val longitude = lngStr.toDoubleOrNull() ?: -46.7314
             val vagas = vagasStr.toIntOrNull() ?: 50
             val eventoId = eventoParaEditar?.id ?: (System.currentTimeMillis() % 1000000).toInt()
             val criadorEmail = if (ehEdicao && eventoParaEditar?.criadorEmail?.isNotEmpty() == true) {
@@ -275,6 +325,9 @@ object CreateEventScreen {
                 dataBadge = dataBadge.uppercase(Locale.getDefault()),
                 horario = horario,
                 local = local,
+                endereco = endereco,
+                latitude = latitude,
+                longitude = longitude,
                 vagas = vagas,
                 encerrado = ehEncerrado,
                 criadorEmail = criadorEmail
