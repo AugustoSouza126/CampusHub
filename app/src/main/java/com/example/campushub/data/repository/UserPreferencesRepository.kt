@@ -2,10 +2,13 @@ package com.example.campushub.data.repository
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.example.campushub.data.model.Avaliacao
-import com.example.campushub.data.model.Comentario
+import com.example.campushub.data.model.EventAudio
+import com.example.campushub.data.model.EventComment
+import com.example.campushub.data.model.EventPhoto
+import com.example.campushub.data.model.EventRating
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -88,15 +91,15 @@ class UserPreferencesRepository(context: Context) {
     // COMENTÁRIOS
     // =========================================================
 
-    fun getTodosComentarios(): List<Comentario> {
+    fun getTodosComentarios(): List<EventComment> {
         val jsonStr = prefs.getString("user_comentarios", "[]") ?: "[]"
-        val lista = mutableListOf<Comentario>()
+        val lista = mutableListOf<EventComment>()
         try {
             val jsonArray = JSONArray(jsonStr)
             for (i in 0 until jsonArray.length()) {
                 val obj = jsonArray.getJSONObject(i)
                 lista.add(
-                    Comentario(
+                    EventComment(
                         id = obj.optString("id", UUID.randomUUID().toString()),
                         eventoId = obj.optInt("eventoId"),
                         autorNome = obj.optString("autorNome"),
@@ -112,7 +115,7 @@ class UserPreferencesRepository(context: Context) {
         return lista
     }
 
-    private fun salvarTodosComentarios(lista: List<Comentario>) {
+    private fun salvarTodosComentarios(lista: List<EventComment>) {
         val jsonArray = JSONArray()
         for (c in lista) {
             val obj = JSONObject().apply {
@@ -128,14 +131,14 @@ class UserPreferencesRepository(context: Context) {
         prefs.edit().putString("user_comentarios", jsonArray.toString()).apply()
     }
 
-    fun getComentariosDoEvento(eventoId: Int): List<Comentario> {
+    fun getComentariosDoEvento(eventoId: Int): List<EventComment> {
         return getTodosComentarios().filter { it.eventoId == eventoId }
     }
 
     fun adicionarComentario(eventoId: Int, texto: String) {
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
         val dataFormatada = sdf.format(Date())
-        val novo = Comentario(
+        val novo = EventComment(
             eventoId = eventoId,
             autorNome = getUsuarioNome().ifEmpty { "Usuário" },
             autorEmail = getUsuarioEmail(),
@@ -166,15 +169,15 @@ class UserPreferencesRepository(context: Context) {
     // AVALIAÇÕES (NOTAS DE 1 A 5 ESTRELAS)
     // =========================================================
 
-    fun getTodasAvaliacoes(): List<Avaliacao> {
+    fun getTodasAvaliacoes(): List<EventRating> {
         val jsonStr = prefs.getString("user_avaliacoes", "[]") ?: "[]"
-        val lista = mutableListOf<Avaliacao>()
+        val lista = mutableListOf<EventRating>()
         try {
             val jsonArray = JSONArray(jsonStr)
             for (i in 0 until jsonArray.length()) {
                 val obj = jsonArray.getJSONObject(i)
                 lista.add(
-                    Avaliacao(
+                    EventRating(
                         eventoId = obj.optInt("eventoId"),
                         autorEmail = obj.optString("autorEmail"),
                         nota = obj.optInt("nota")
@@ -187,7 +190,7 @@ class UserPreferencesRepository(context: Context) {
         return lista
     }
 
-    private fun salvarTodasAvaliacoes(lista: List<Avaliacao>) {
+    private fun salvarTodasAvaliacoes(lista: List<EventRating>) {
         val jsonArray = JSONArray()
         for (a in lista) {
             val obj = JSONObject().apply {
@@ -212,9 +215,9 @@ class UserPreferencesRepository(context: Context) {
         val lista = getTodasAvaliacoes().toMutableList()
         val index = lista.indexOfFirst { it.eventoId == eventoId && it.autorEmail.equals(email, ignoreCase = true) }
         if (index != -1) {
-            lista[index] = Avaliacao(eventoId, email, nota)
+            lista[index] = EventRating(eventoId, email, nota)
         } else {
-            lista.add(Avaliacao(eventoId, email, nota))
+            lista.add(EventRating(eventoId, email, nota))
         }
         salvarTodasAvaliacoes(lista)
     }
@@ -225,5 +228,158 @@ class UserPreferencesRepository(context: Context) {
         val soma = avaliacoes.sumOf { it.nota }
         val media = soma.toFloat() / avaliacoes.size
         return Pair(media, avaliacoes.size)
+    }
+
+    // =========================================================
+    // FOTOS DOS EVENTOS
+    // =========================================================
+
+    fun getTodasFotos(): List<EventPhoto> {
+        val jsonStr = prefs.getString("user_fotos", "[]") ?: "[]"
+        val lista = mutableListOf<EventPhoto>()
+        try {
+            val jsonArray = JSONArray(jsonStr)
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                lista.add(
+                    EventPhoto(
+                        id = obj.optString("id", UUID.randomUUID().toString()),
+                        eventoId = obj.optInt("eventoId"),
+                        caminhoArquivo = obj.optString("caminhoArquivo"),
+                        autorNome = obj.optString("autorNome"),
+                        autorEmail = obj.optString("autorEmail"),
+                        dataPublicacao = obj.optString("dataPublicacao")
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return lista
+    }
+
+    private fun salvarTodasFotos(lista: List<EventPhoto>) {
+        val jsonArray = JSONArray()
+        for (f in lista) {
+            val obj = JSONObject().apply {
+                put("id", f.id)
+                put("eventoId", f.eventoId)
+                put("caminhoArquivo", f.caminhoArquivo)
+                put("autorNome", f.autorNome)
+                put("autorEmail", f.autorEmail)
+                put("dataPublicacao", f.dataPublicacao)
+            }
+            jsonArray.put(obj)
+        }
+        prefs.edit().putString("user_fotos", jsonArray.toString()).apply()
+    }
+
+    fun getFotosDoEvento(eventoId: Int): List<EventPhoto> {
+        return getTodasFotos().filter { it.eventoId == eventoId }
+    }
+
+    fun adicionarFoto(eventoId: Int, caminhoArquivo: String) {
+        val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        val dataFormatada = sdf.format(Date())
+        val novaFoto = EventPhoto(
+            eventoId = eventoId,
+            caminhoArquivo = caminhoArquivo,
+            autorNome = getUsuarioNome().ifEmpty { "Usuário" },
+            autorEmail = getUsuarioEmail(),
+            dataPublicacao = dataFormatada
+        )
+        val lista = getTodasFotos().toMutableList()
+        lista.add(novaFoto)
+        salvarTodasFotos(lista)
+    }
+
+    fun deletarFoto(fotoId: String) {
+        val foto = getTodasFotos().find { it.id == fotoId }
+        if (foto != null) {
+            try {
+                val f = File(foto.caminhoArquivo)
+                if (f.exists()) f.delete()
+            } catch (_: Exception) {}
+        }
+        val lista = getTodasFotos().filter { it.id != fotoId }
+        salvarTodasFotos(lista)
+    }
+
+    // =========================================================
+    // ÁUDIOS DOS EVENTOS
+    // =========================================================
+
+    fun getTodosAudios(): List<EventAudio> {
+        val jsonStr = prefs.getString("user_audios", "[]") ?: "[]"
+        val lista = mutableListOf<EventAudio>()
+        try {
+            val jsonArray = JSONArray(jsonStr)
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                lista.add(
+                    EventAudio(
+                        id = obj.optString("id", UUID.randomUUID().toString()),
+                        eventoId = obj.optInt("eventoId"),
+                        caminhoArquivo = obj.optString("caminhoArquivo"),
+                        duracaoTexto = obj.optString("duracaoTexto", "00:00"),
+                        autorNome = obj.optString("autorNome"),
+                        autorEmail = obj.optString("autorEmail"),
+                        dataPublicacao = obj.optString("dataPublicacao")
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return lista
+    }
+
+    private fun salvarTodosAudios(lista: List<EventAudio>) {
+        val jsonArray = JSONArray()
+        for (a in lista) {
+            val obj = JSONObject().apply {
+                put("id", a.id)
+                put("eventoId", a.eventoId)
+                put("caminhoArquivo", a.caminhoArquivo)
+                put("duracaoTexto", a.duracaoTexto)
+                put("autorNome", a.autorNome)
+                put("autorEmail", a.autorEmail)
+                put("dataPublicacao", a.dataPublicacao)
+            }
+            jsonArray.put(obj)
+        }
+        prefs.edit().putString("user_audios", jsonArray.toString()).apply()
+    }
+
+    fun getAudiosDoEvento(eventoId: Int): List<EventAudio> {
+        return getTodosAudios().filter { it.eventoId == eventoId }
+    }
+
+    fun adicionarAudio(eventoId: Int, caminhoArquivo: String, duracaoTexto: String = "00:00") {
+        val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        val dataFormatada = sdf.format(Date())
+        val novoAudio = EventAudio(
+            eventoId = eventoId,
+            caminhoArquivo = caminhoArquivo,
+            duracaoTexto = duracaoTexto,
+            autorNome = getUsuarioNome().ifEmpty { "Usuário" },
+            autorEmail = getUsuarioEmail(),
+            dataPublicacao = dataFormatada
+        )
+        val lista = getTodosAudios().toMutableList()
+        lista.add(novoAudio)
+        salvarTodosAudios(lista)
+    }
+
+    fun deletarAudio(audioId: String) {
+        val audio = getTodosAudios().find { it.id == audioId }
+        if (audio != null) {
+            try {
+                val f = File(audio.caminhoArquivo)
+                if (f.exists()) f.delete()
+            } catch (_: Exception) {}
+        }
+        val lista = getTodosAudios().filter { it.id != audioId }
+        salvarTodosAudios(lista)
     }
 }

@@ -7,7 +7,7 @@ import android.view.Gravity
 import android.view.View
 import android.widget.*
 import androidx.cardview.widget.CardView
-import com.example.campushub.data.model.Evento
+import com.example.campushub.data.model.Event
 import com.example.campushub.data.repository.EventRepository
 import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.components.UIComponents
@@ -17,6 +17,7 @@ import java.util.Locale
 /**
  * Responsável por construir a Tela de Eventos Criados pelo Usuário.
  * Filtra no Firebase e exibe os eventos publicados com o e-mail do usuário logado,
+ * permitindo editar, encerrar ou excluir cada um deles.
  */
 object MyCreatedEventsScreen {
 
@@ -27,11 +28,12 @@ object MyCreatedEventsScreen {
         context: Context,
         layout: LinearLayout,
         userRepo: UserPreferencesRepository,
-        onEditarEvento: (Evento) -> Unit,
+        onEditarEvento: (Event) -> Unit,
         onCriarNovoEvento: () -> Unit,
-        onVerDetalhes: (Evento) -> Unit
+        onVerDetalhes: (Event) -> Unit,
+        onVoltar: (() -> Unit)? = null
     ) {
-        layout.addView(UIComponents.criarHeaderBar(context, "Eventos Criados por Mim", "Gerencie os eventos que você publicou no campus."))
+        layout.addView(UIComponents.criarHeaderBar(context, "Eventos Criados por Mim", "Gerencie os eventos que você publicou no campus.", onVoltar = onVoltar))
 
         val containerLista = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -97,14 +99,15 @@ object MyCreatedEventsScreen {
 
     /**
      * Constrói o Card específico com botões de gerenciamento (Editar, Encerrar, Excluir)
+     * para eventos publicados pelo usuário logado.
      */
     private fun adicionarCardCriador(
         context: Context,
         parent: LinearLayout,
-        evento: Evento,
+        evento: Event,
         userRepo: UserPreferencesRepository,
-        onEditarEvento: (Evento) -> Unit,
-        onVerDetalhes: (Evento) -> Unit,
+        onEditarEvento: (Event) -> Unit,
+        onVerDetalhes: (Event) -> Unit,
         onAtualizarLista: () -> Unit
     ) {
         val card = CardView(context).apply {

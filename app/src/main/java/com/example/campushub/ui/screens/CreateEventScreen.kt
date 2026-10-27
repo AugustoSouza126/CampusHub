@@ -7,7 +7,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.text.InputType
 import android.widget.*
-import com.example.campushub.data.model.Evento
+import com.example.campushub.data.model.Event
 import com.example.campushub.data.repository.EventRepository
 import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.components.MapViewComponent
@@ -34,7 +34,7 @@ object CreateEventScreen {
         context: Context,
         layout: LinearLayout,
         userRepo: UserPreferencesRepository,
-        eventoParaEditar: Evento? = null,
+        eventoParaEditar: Event? = null,
         onSucesso: () -> Unit,
         onVoltar: () -> Unit
     ) {
@@ -42,7 +42,7 @@ object CreateEventScreen {
         val tituloHeader = if (ehEdicao) "Editar Evento" else "Criar Novo Evento"
         val subHeader = if (ehEdicao) "Atualize as informações do evento no Firebase." else "Preencha as informações para publicar no campus."
 
-        layout.addView(UIComponents.criarHeaderBar(context, tituloHeader, subHeader))
+        layout.addView(UIComponents.criarHeaderBar(context, tituloHeader, subHeader, onVoltar = onVoltar))
 
         var categoriaSelecionada = eventoParaEditar?.categoria ?: "Acadêmico"
         var ehEncerrado = eventoParaEditar?.encerrado ?: false
@@ -316,7 +316,7 @@ object CreateEventScreen {
                 userRepo.getUsuarioEmail()
             }
 
-            val eventoSalvar = Evento(
+            val eventoSalvar = Event(
                 id = eventoId,
                 titulo = titulo,
                 categoria = categoriaSelecionada,

@@ -1,6 +1,6 @@
 package com.example.campushub.data.repository
 
-import com.example.campushub.data.model.Evento
+import com.example.campushub.data.model.Event
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -18,7 +18,7 @@ object EventRepository {
      * Lista inicial de eventos pré-cadastrados no campus com dados de localização (Endereço, Latitude e Longitude).
      */
     val listaEventosIniciais = listOf(
-        Evento(
+        Event(
             id = 0,
             titulo = "Seminário de Boas-Vindas 2026",
             categoria = "Acadêmico",
@@ -33,7 +33,7 @@ object EventRepository {
             vagas = 200,
             encerrado = true
         ),
-        Evento(
+        Event(
             id = 1,
             titulo = "Semana Acadêmica 2026",
             categoria = "Acadêmico",
@@ -47,7 +47,7 @@ object EventRepository {
             longitude = -46.7328,
             vagas = 100
         ),
-        Evento(
+        Event(
             id = 2,
             titulo = "Workshop de Programação Mobile",
             categoria = "Workshop",
@@ -61,7 +61,7 @@ object EventRepository {
             longitude = -46.7305,
             vagas = 40
         ),
-        Evento(
+        Event(
             id = 3,
             titulo = "Hackathon Universitário",
             categoria = "Hackathon",
@@ -75,7 +75,7 @@ object EventRepository {
             longitude = -46.7289,
             vagas = 60
         ),
-        Evento(
+        Event(
             id = 4,
             titulo = "Palestra: Inteligência Artificial",
             categoria = "Palestra",
@@ -89,7 +89,7 @@ object EventRepository {
             longitude = -46.7314,
             vagas = 150
         ),
-        Evento(
+        Event(
             id = 5,
             titulo = "Feira de Profissões e Carreiras",
             categoria = "Carreiras",
@@ -103,7 +103,7 @@ object EventRepository {
             longitude = -46.7265,
             vagas = 300
         ),
-        Evento(
+        Event(
             id = 6,
             titulo = "Workshop de Cibersegurança",
             categoria = "Segurança",
@@ -120,7 +120,7 @@ object EventRepository {
     )
 
     fun getEventos(
-        onSuccess: (List<Evento>) -> Unit,
+        onSuccess: (List<Event>) -> Unit,
         onError: (String) -> Unit
     ) {
         val collRef: CollectionReference = db.collection(COLLECTION_NAME)
@@ -131,9 +131,9 @@ object EventRepository {
                         getEventos(onSuccess, onError)
                     }
                 } else {
-                    val lista = mutableListOf<Evento>()
+                    val lista = mutableListOf<Event>()
                     for (doc in querySnapshot.documents) {
-                        val evento = doc.toObject(Evento::class.java)
+                        val evento = doc.toObject(Event::class.java)
                         if (evento != null) {
                             lista.add(evento)
                         }
@@ -149,7 +149,7 @@ object EventRepository {
     }
 
     fun adicionarEvento(
-        evento: Evento,
+        evento: Event,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
@@ -165,7 +165,7 @@ object EventRepository {
     }
 
     fun atualizarEvento(
-        evento: Evento,
+        evento: Event,
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {

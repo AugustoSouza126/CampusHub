@@ -1,13 +1,22 @@
 package com.example.campushub
 
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import com.example.campushub.data.model.Evento
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
+import com.example.campushub.data.model.Event
 import com.example.campushub.data.repository.AuthRepository
+import com.example.campushub.data.repository.EventRepository
 import com.example.campushub.data.repository.UserPreferencesRepository
+import com.example.campushub.ui.components.MediaHelper
 import com.example.campushub.ui.components.UIComponents
 import com.example.campushub.ui.screens.CreateEventScreen
 import com.example.campushub.ui.screens.EventDetail
@@ -17,17 +26,56 @@ import com.example.campushub.ui.screens.LoginScreen
 import com.example.campushub.ui.screens.MyCreatedEventsScreen
 import com.example.campushub.ui.screens.ProfileScreen
 import com.example.campushub.ui.screens.SubscriptionsScreen
+import java.io.File
 
 /**
  * Atividade Principal do CampusHub.
  * Atua como o orquestrador de navegação do aplicativo, gerenciando as telas,
- * o manipulador de botão voltar (OnBackPressedDispatcher) e delegando a construção
- * das telas para seus respectivos componentes no pacote `ui.screens`.
+ * permissões e lançadores de câmera e galeria para publicação de fotos e áudios.
  */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var userRepo: UserPreferencesRepository
     private var telaAtual = "HOME"
+
+    // Cache e referências da Tela de Detalhes para manter posição de rolagem em tempo real
+    private var currentDetailRoot: FrameLayout? = null
+    private var currentDetailLayout: LinearLayout? = null
+    private var currentDetailScrollView: ScrollView? = null
+
+    // Estados e lançadores de mídia (Câmera e Galeria)
+    private var eventoIdAtualParaMidia: Int = 0
+    private var photoFileCamera: File? = null
+    private var onMidiaAtualizadaCallback: (() -> Unit)? = null
+
+    private val takePictureLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success && photoFileCamera != null && photoFileCamera!!.exists()) {
+            userRepo.adicionarFoto(eventoIdAtualParaMidia, photoFileCamera!!.absolutePath)
+            Toast.makeText(this, "Foto capturada e publicada no evento!", Toast.LENGTH_SHORT).show()
+            onMidiaAtualizadaCallback?.invoke()
+        }
+    }
+
+    private val pickGalleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) {
+            val caminhoSalvo = MediaHelper.salvarFotoGaleriaLocalmente(this, uri)
+            if (caminhoSalvo != null) {
+                userRepo.adicionarFoto(eventoIdAtualParaMidia, caminhoSalvo)
+                Toast.makeText(this, "Foto da galeria publicada no evento!", Toast.LENGTH_SHORT).show()
+                onMidiaAtualizadaCallback?.invoke()
+            }
+        }
+    }
+
+    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { map ->
+        if (map[android.Manifest.permission.RECORD_AUDIO] == true) {
+            Toast.makeText(this, "Permissão de gravação de áudio concedida!", Toast.LENGTH_SHORT).show()
+            onMidiaAtualizadaCallback?.invoke()
+        }
+        if (map[android.Manifest.permission.CAMERA] == true) {
+            Toast.makeText(this, "Permissão de câmera concedida!", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,17 +106,19 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * Cria e define a estrutura base do layout da tela na Activity.
-     * Associa o callback da barra de navegação inferior às funções de mudança de tela.
      */
     private fun criarTelaBase(
         exibirBottomNav: Boolean = true,
-        abaAtiva: String = "HOME"
+        abaAtiva: String = "HOME",
+        restoreScrollY: Int = 0
     ): Pair<FrameLayout, LinearLayout> {
         val (root, layout) = UIComponents.criarTelaBase(
             context = this,
             exibirBottomNav = exibirBottomNav,
             abaAtiva = abaAtiva,
+            restoreScrollY = restoreScrollY,
             onNavigate = { aba ->
+                limparDetalhesCache()
                 when (aba) {
                     "HOME" -> mostrarHome()
                     "FAVORITOS" -> mostrarFavoritos()
@@ -85,18 +135,51 @@ class MainActivity : AppCompatActivity() {
      * Realiza o logout do usuário através do [AuthRepository] e redireciona para a tela de login.
      */
     private fun deslogarUsuario() {
+        limparDetalhesCache()
         AuthRepository.deslogar()
         mostrarLogin()
+    }
+
+    // =========================================================
+    // LANÇADORES DE CÂMERA, GALERIA E ÁUDIO
+    // =========================================================
+
+    private fun tirarFotoCamera(eventoId: Int, onConcluido: () -> Unit) {
+        eventoIdAtualParaMidia = eventoId
+        onMidiaAtualizadaCallback = onConcluido
+
+        val temPermissaoCamera = ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        if (!temPermissaoCamera) {
+            requestPermissionLauncher.launch(arrayOf(android.Manifest.permission.CAMERA))
+            return
+        }
+
+        try {
+            photoFileCamera = MediaHelper.criarArquivoFotoCamera(this)
+            val uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", photoFileCamera!!)
+            takePictureLauncher.launch(uri)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Erro ao abrir câmera: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun escolherFotoGaleria(eventoId: Int, onConcluido: () -> Unit) {
+        eventoIdAtualParaMidia = eventoId
+        onMidiaAtualizadaCallback = onConcluido
+        pickGalleryLauncher.launch("image/*")
+    }
+
+    private fun solicitarPermissaoAudio(onConcluido: () -> Unit) {
+        onMidiaAtualizadaCallback = onConcluido
+        requestPermissionLauncher.launch(arrayOf(android.Manifest.permission.RECORD_AUDIO))
     }
 
     // =========================================================
     // FLUXO DE AUTENTICAÇÃO (LOGIN, CADASTRO, RECUPERAÇÃO)
     // =========================================================
 
-    /**
-     * Exibe a tela de login para o usuário.
-     */
     private fun mostrarLogin() {
+        limparDetalhesCache()
         telaAtual = "LOGIN"
         val (_, layout) = criarTelaBase(exibirBottomNav = false)
 
@@ -110,10 +193,8 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    /**
-     * Exibe a tela de cadastro de nova conta.
-     */
     private fun mostrarCadastro() {
+        limparDetalhesCache()
         telaAtual = "CADASTRO"
         val (_, layout) = criarTelaBase(exibirBottomNav = false)
 
@@ -126,10 +207,8 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    /**
-     * Exibe a tela de recuperação de senha por e-mail.
-     */
     private fun mostrarRecuperacao() {
+        limparDetalhesCache()
         telaAtual = "RECUPERACAO"
         val (_, layout) = criarTelaBase(exibirBottomNav = false)
 
@@ -144,10 +223,8 @@ class MainActivity : AppCompatActivity() {
     // TELA PRINCIPAL (HOME)
     // =========================================================
 
-    /**
-     * Exibe a tela inicial com busca, filtros de evento e lista principal.
-     */
     private fun mostrarHome() {
+        limparDetalhesCache()
         telaAtual = "HOME"
         val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "HOME")
 
@@ -165,10 +242,8 @@ class MainActivity : AppCompatActivity() {
     // CRIAR / EDITAR EVENTO
     // =========================================================
 
-    /**
-     * Exibe o formulário para criar um novo evento ou editar um evento existente.
-     */
-    private fun mostrarCriarEvento(eventoParaEditar: Evento? = null) {
+    private fun mostrarCriarEvento(eventoParaEditar: Event? = null) {
+        limparDetalhesCache()
         telaAtual = "CRIAR_EVENTO"
         val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "HOME")
 
@@ -182,7 +257,7 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    private fun mostrarEditarEvento(evento: Evento) {
+    private fun mostrarEditarEvento(evento: Event) {
         mostrarCriarEvento(evento)
     }
 
@@ -190,10 +265,8 @@ class MainActivity : AppCompatActivity() {
     // EVENTOS CRIADOS POR MIM
     // =========================================================
 
-    /**
-     * Exibe a lista de eventos publicados pelo usuário logado.
-     */
     private fun mostrarEventosCriados() {
+        limparDetalhesCache()
         telaAtual = "EVENTOS_CRIADOS"
         val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "HOME")
 
@@ -203,20 +276,79 @@ class MainActivity : AppCompatActivity() {
             userRepo = userRepo,
             onEditarEvento = { evento -> mostrarEditarEvento(evento) },
             onCriarNovoEvento = { mostrarCriarEvento() },
-            onVerDetalhes = { evento -> mostrarDetalhes(evento) }
+            onVerDetalhes = { evento -> mostrarDetalhes(evento) },
+            onVoltar = { mostrarHome() }
         )
     }
 
     // =========================================================
-    // DETALHES DO EVENTO
+    // DETALHES DO EVENTO (ATUALIZAÇÃO EM TEMPO REAL SEM DUPLICAR HEADER)
     // =========================================================
 
-    /**
-     * Exibe a tela de detalhes com informações, avaliações e comentários do evento.
-     */
-    private fun mostrarDetalhes(evento: Evento) {
+    private fun recarregarDetalhesEmMesmaPosicao(evento: Event) {
+        if (currentDetailLayout != null && currentDetailScrollView != null && telaAtual == "DETALHES") {
+            val savedY = currentDetailScrollView!!.scrollY
+
+            EventRepository.getEventos(
+                onSuccess = { lista ->
+                    val eventoAtualizado = lista.find { it.id == evento.id } ?: evento
+                    currentDetailLayout!!.removeAllViews()
+
+                    EventDetail.construirTelaDetalhes(
+                        context = this,
+                        layout = currentDetailLayout!!,
+                        evento = eventoAtualizado,
+                        userRepo = userRepo,
+                        onEditarEvento = { eventoParaEditar -> mostrarEditarEvento(eventoParaEditar) },
+                        onTirarFotoCamera = { tirarFotoCamera(eventoAtualizado.id) { recarregarDetalhesEmMesmaPosicao(eventoAtualizado) } },
+                        onEscolherFotoGaleria = { escolherFotoGaleria(eventoAtualizado.id) { recarregarDetalhesEmMesmaPosicao(eventoAtualizado) } },
+                        onPedirPermissaoAudio = { solicitarPermissaoAudio { recarregarDetalhesEmMesmaPosicao(eventoAtualizado) } },
+                        onAtualizarTela = { recarregarDetalhesEmMesmaPosicao(eventoAtualizado) },
+                        onVoltar = {
+                            limparDetalhesCache()
+                            mostrarHome()
+                        }
+                    )
+
+                    currentDetailScrollView!!.post {
+                        currentDetailScrollView!!.scrollTo(0, savedY)
+                    }
+                },
+                onError = {
+                    currentDetailLayout!!.removeAllViews()
+
+                    EventDetail.construirTelaDetalhes(
+                        context = this,
+                        layout = currentDetailLayout!!,
+                        evento = evento,
+                        userRepo = userRepo,
+                        onEditarEvento = { eventoParaEditar -> mostrarEditarEvento(eventoParaEditar) },
+                        onTirarFotoCamera = { tirarFotoCamera(evento.id) { recarregarDetalhesEmMesmaPosicao(evento) } },
+                        onEscolherFotoGaleria = { escolherFotoGaleria(evento.id) { recarregarDetalhesEmMesmaPosicao(evento) } },
+                        onPedirPermissaoAudio = { solicitarPermissaoAudio { recarregarDetalhesEmMesmaPosicao(evento) } },
+                        onAtualizarTela = { recarregarDetalhesEmMesmaPosicao(evento) },
+                        onVoltar = {
+                            limparDetalhesCache()
+                            mostrarHome()
+                        }
+                    )
+
+                    currentDetailScrollView!!.post {
+                        currentDetailScrollView!!.scrollTo(0, savedY)
+                    }
+                }
+            )
+        } else {
+            mostrarDetalhes(evento)
+        }
+    }
+
+    private fun mostrarDetalhes(evento: Event) {
         telaAtual = "DETALHES"
-        val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "HOME")
+        val (root, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "HOME")
+        currentDetailRoot = root
+        currentDetailLayout = layout
+        currentDetailScrollView = root.getChildAt(0) as? ScrollView
 
         EventDetail.construirTelaDetalhes(
             context = this,
@@ -224,19 +356,29 @@ class MainActivity : AppCompatActivity() {
             evento = evento,
             userRepo = userRepo,
             onEditarEvento = { eventoParaEditar -> mostrarEditarEvento(eventoParaEditar) },
-            onAtualizarTela = { mostrarDetalhes(evento) },
-            onVoltar = { mostrarHome() }
+            onTirarFotoCamera = { tirarFotoCamera(evento.id) { recarregarDetalhesEmMesmaPosicao(evento) } },
+            onEscolherFotoGaleria = { escolherFotoGaleria(evento.id) { recarregarDetalhesEmMesmaPosicao(evento) } },
+            onPedirPermissaoAudio = { solicitarPermissaoAudio { recarregarDetalhesEmMesmaPosicao(evento) } },
+            onAtualizarTela = { recarregarDetalhesEmMesmaPosicao(evento) },
+            onVoltar = {
+                limparDetalhesCache()
+                mostrarHome()
+            }
         )
+    }
+
+    private fun limparDetalhesCache() {
+        currentDetailRoot = null
+        currentDetailLayout = null
+        currentDetailScrollView = null
     }
 
     // =========================================================
     // FAVORITOS
     // =========================================================
 
-    /**
-     * Exibe os eventos marcados como favoritos pelo usuário.
-     */
     private fun mostrarFavoritos() {
+        limparDetalhesCache()
         telaAtual = "FAVORITOS"
         val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "FAVORITOS")
 
@@ -253,10 +395,8 @@ class MainActivity : AppCompatActivity() {
     // MINHAS INSCRIÇÕES / MEUS EVENTOS
     // =========================================================
 
-    /**
-     * Exibe os eventos nos quais o usuário está inscrito.
-     */
     private fun mostrarMeusEventos() {
+        limparDetalhesCache()
         telaAtual = "MEUS_EVENTOS"
         val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "MEUS_EVENTOS")
 
@@ -273,10 +413,8 @@ class MainActivity : AppCompatActivity() {
     // PERFIL & EDITAR PERFIL
     // =========================================================
 
-    /**
-     * Exibe os dados do perfil acadêmico do usuário.
-     */
     private fun mostrarPerfil() {
+        limparDetalhesCache()
         telaAtual = "PERFIL"
         val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "PERFIL")
 
@@ -290,19 +428,18 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    /**
-     * Exibe a tela para alterar dados cadastrais do perfil.
-     */
     private fun mostrarEditarPerfil() {
+        limparDetalhesCache()
         telaAtual = "EDITAR_PERFIL"
         val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "PERFIL")
 
-        ProfileScreen.construirTelaEditarPerfil(
+        ProfileScreen.construirTelaPerfil(
             context = this,
             layout = layout,
             userRepo = userRepo,
-            onPerfilAtualizado = { mostrarPerfil() },
-            onCancelar = { mostrarPerfil() }
+            onEditarPerfil = { mostrarEditarPerfil() },
+            onVerEventosCriados = { mostrarEventosCriados() },
+            onDeslogar = { deslogarUsuario() }
         )
     }
 }

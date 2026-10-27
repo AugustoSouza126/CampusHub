@@ -1,10 +1,9 @@
 package com.example.campushub.data.model
 
 /**
- * Modelo de dados que representa um Evento Acadêmico no CampusHub.
- * Contém informações gerais, dados de inscrição e geolocalização (endereço, latitude e longitude).
+ * Data model representing an Academic Event in CampusHub.
  */
-data class Evento(
+data class Event(
     val id: Int = 0,
     val titulo: String = "",
     val categoria: String = "",

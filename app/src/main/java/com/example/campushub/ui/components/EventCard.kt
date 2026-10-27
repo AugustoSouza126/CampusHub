@@ -9,7 +9,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.cardview.widget.CardView
-import com.example.campushub.data.model.Evento
+import com.example.campushub.data.model.Event
 import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.theme.AppColors
 import java.util.Locale
@@ -25,9 +25,9 @@ object EventCard {
     fun adicionarCardEvento(
         context: Context,
         parent: LinearLayout,
-        evento: Evento,
+        evento: Event,
         userRepo: UserPreferencesRepository,
-        onVerDetalhes: (Evento) -> Unit
+        onVerDetalhes: (Event) -> Unit
     ) {
         fun dpToPx(dp: Int): Int = UIComponents.dpToPx(context, dp)
 

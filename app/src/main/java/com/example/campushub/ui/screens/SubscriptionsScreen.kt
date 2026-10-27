@@ -5,7 +5,7 @@ import android.view.Gravity
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import com.example.campushub.data.model.Evento
+import com.example.campushub.data.model.Event
 import com.example.campushub.data.repository.EventRepository
 import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.components.EventCard
@@ -14,6 +14,7 @@ import com.example.campushub.ui.theme.AppColors
 
 /**
  * Responsável por construir a Tela de Minhas Inscrições do CampusHub.
+ * Filtra e exibe os eventos em que o usuário confirmou presença/inscricão.
  */
 object SubscriptionsScreen {
 
@@ -25,7 +26,7 @@ object SubscriptionsScreen {
         context: Context,
         layout: LinearLayout,
         userRepo: UserPreferencesRepository,
-        onVerDetalhes: (Evento) -> Unit,
+        onVerDetalhes: (Event) -> Unit,
         onExplorarEventos: () -> Unit
     ) {
         fun dpToPx(dp: Int): Int = UIComponents.dpToPx(context, dp)

@@ -109,7 +109,7 @@ object UIComponents {
             textSize = 14f
             typeface = Typeface.DEFAULT_BOLD
             isAllCaps = false
-            backgroundTintList = null // Desabilita o tint padrão do MaterialButton para garantir fundo e fonte branca customizados
+            backgroundTintList = null
 
             if (perigo) {
                 background = criarShape(context, Color.parseColor("#FEF2F2"), Color.parseColor("#EF4444"), 1, 12f)
@@ -129,15 +129,20 @@ object UIComponents {
     }
 
     /**
-     * Cria a barra de cabeçalho (Header) superior com fundo Azul Real vibrante, a marca CampusHub em branco,
-     * título principal e subtítulo em texto BRANCO PURO.
+     * Cria a barra de cabeçalho (Header) superior com fundo Azul Real vibrante.
+     * Se [onVoltar] for fornecido, exibe um botão circular branco perfeitamente centralizado com a flecha '<'.
      */
-    fun criarHeaderBar(context: Context, titulo: String, subtitulo: String? = null): View {
+    fun criarHeaderBar(
+        context: Context,
+        titulo: String,
+        subtitulo: String? = null,
+        onVoltar: (() -> Unit)? = null
+    ): View {
         val header = LinearLayout(context).apply {
             tag = "HEADER_BAR"
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(AppColors.COLOR_PRIMARY)
-            setPadding(dpToPx(context, 20), dpToPx(context, 52), dpToPx(context, 20), dpToPx(context, 24))
+            setPadding(dpToPx(context, 20), dpToPx(context, 48), dpToPx(context, 20), dpToPx(context, 20))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -146,18 +151,55 @@ object UIComponents {
             }
         }
 
+        val rowTop = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, 0, dpToPx(context, 6))
+        }
+
+        if (onVoltar != null) {
+            val btnVoltarCirculo = FrameLayout(context).apply {
+                background = criarShape(context, Color.WHITE, Color.TRANSPARENT, 0, 20f)
+                elevation = dpToPx(context, 4).toFloat()
+                layoutParams = LinearLayout.LayoutParams(
+                    dpToPx(context, 38),
+                    dpToPx(context, 38)
+                ).apply {
+                    setMargins(0, 0, dpToPx(context, 12), 0)
+                }
+                setOnClickListener { onVoltar() }
+            }
+
+            val tvArrow = TextView(context).apply {
+                text = "‹"
+                textSize = 26f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(AppColors.COLOR_TEXT_MAIN)
+                includeFontPadding = false
+                gravity = Gravity.CENTER
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    Gravity.CENTER
+                )
+            }
+            btnVoltarCirculo.addView(tvArrow)
+            rowTop.addView(btnVoltarCirculo)
+        }
+
         val tvLogo = TextView(context).apply {
             text = "🎓 CampusHub"
             textSize = 13f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
-            setPadding(0, 0, 0, dpToPx(context, 4))
         }
-        header.addView(tvLogo)
+        rowTop.addView(tvLogo)
+
+        header.addView(rowTop)
 
         val tvTitulo = TextView(context).apply {
             text = titulo
-            textSize = 24f
+            textSize = 22f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
         }
@@ -240,12 +282,13 @@ object UIComponents {
     /**
      * Monta o layout base da tela contendo ScrollView, Container para os elementos do corpo
      * e insere opcionalmente a barra de navegação inferior.
-     * Retorna o FrameLayout raiz e o LinearLayout interno onde os componentes são adicionados.
+     * Suporta restauração opcional da posição de rolagem [restoreScrollY].
      */
     fun criarTelaBase(
         context: Context,
         exibirBottomNav: Boolean = true,
         abaAtiva: String = "HOME",
+        restoreScrollY: Int = 0,
         onNavigate: (String) -> Unit = {}
     ): Pair<FrameLayout, LinearLayout> {
         val root = FrameLayout(context).apply {
@@ -287,8 +330,18 @@ object UIComponents {
         }
 
         val layoutDelegado = object : LinearLayout(context) {
+            private fun removerHeaderAnterior() {
+                for (i in containerRoot.childCount - 1 downTo 0) {
+                    val child = containerRoot.getChildAt(i)
+                    if (child?.tag == "HEADER_BAR") {
+                        containerRoot.removeViewAt(i)
+                    }
+                }
+            }
+
             override fun addView(child: View?) {
                 if (child?.tag == "HEADER_BAR") {
+                    removerHeaderAnterior()
                     containerRoot.addView(child, 0)
                 } else {
                     bodyLayout.addView(child)
@@ -297,16 +350,28 @@ object UIComponents {
 
             override fun addView(child: View?, params: ViewGroup.LayoutParams?) {
                 if (child?.tag == "HEADER_BAR") {
+                    removerHeaderAnterior()
                     containerRoot.addView(child, 0, params)
                 } else {
                     bodyLayout.addView(child, params)
                 }
+            }
+
+            override fun removeAllViews() {
+                bodyLayout.removeAllViews()
+                removerHeaderAnterior()
             }
         }
 
         containerRoot.addView(bodyLayout)
         scrollView.addView(containerRoot)
         root.addView(scrollView)
+
+        if (restoreScrollY > 0) {
+            scrollView.post {
+                scrollView.scrollTo(0, restoreScrollY)
+            }
+        }
 
         if (exibirBottomNav) {
             val bottomNav = criarBottomNav(context, abaAtiva, onNavigate)

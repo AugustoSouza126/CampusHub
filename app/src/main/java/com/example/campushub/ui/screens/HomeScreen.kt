@@ -10,7 +10,7 @@ import android.widget.Button
 import android.widget.HorizontalScrollView
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.example.campushub.data.model.Evento
+import com.example.campushub.data.model.Event
 import com.example.campushub.data.repository.EventRepository
 import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.components.EventCard
@@ -35,7 +35,7 @@ object HomeScreen {
         userRepo: UserPreferencesRepository,
         onCriarNovoEvento: () -> Unit,
         onVerEventosCriados: () -> Unit,
-        onVerDetalhes: (Evento) -> Unit
+        onVerDetalhes: (Event) -> Unit
     ) {
         fun dpToPx(dp: Int): Int = UIComponents.dpToPx(context, dp)
 

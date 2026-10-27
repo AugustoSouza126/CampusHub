@@ -9,9 +9,10 @@ import android.view.Gravity
 import android.view.View
 import android.widget.*
 import androidx.cardview.widget.CardView
-import com.example.campushub.data.model.Evento
+import com.example.campushub.data.model.Event
 import com.example.campushub.data.repository.EventRepository
 import com.example.campushub.data.repository.UserPreferencesRepository
+import com.example.campushub.ui.components.EventMediaComponent
 import com.example.campushub.ui.components.MapViewComponent
 import com.example.campushub.ui.components.UIComponents
 import com.example.campushub.ui.theme.AppColors
@@ -22,24 +23,36 @@ import java.util.Locale
  * Responsável por construir a Tela de Detalhes do Evento.
  * Exibe informações completas (data, horário, local, endereço, mapa MapLibre),
  * painel exclusivo para o criador do evento (editar/encerrar/excluir),
- * gerencia inscrição e favoritos, e oferece seções interativas de avaliação (1 a 5 estrelas)
- * e comentários dos alunos.
+ * gerencia inscrição, favoritos, fotos publicadas (câmera/galeria), áudios gravados,
+ * avaliações (1 a 5 estrelas) e comentários dos alunos.
  */
 object EventDetail {
 
     /**
      * Constrói a interface completa da Tela de Detalhes do Evento.
+     * Suporta o botão de voltar com flecha no cabeçalho e preserva a posição de rolagem nas interações.
      */
     fun construirTelaDetalhes(
         context: Context,
         layout: LinearLayout,
-        evento: Evento,
+        evento: Event,
         userRepo: UserPreferencesRepository,
-        onEditarEvento: (Evento) -> Unit = {},
-        onAtualizarTela: () -> Unit,
+        onEditarEvento: (Event) -> Unit = {},
+        onTirarFotoCamera: () -> Unit = {},
+        onEscolherFotoGaleria: () -> Unit = {},
+        onPedirPermissaoAudio: () -> Unit = {},
+        onAtualizarTela: (restoreScrollY: Int) -> Unit,
         onVoltar: () -> Unit
     ) {
-        layout.addView(UIComponents.criarHeaderBar(context, evento.titulo, "Categoria: ${evento.categoria}"))
+        // Função auxiliar para atualizar a tela mantendo a posição de rolagem atual
+        fun atualizarManterPosicao() {
+            val parentScroll = (layout.parent?.parent as? ScrollView) ?: (layout.parent as? ScrollView)
+            val currentY = parentScroll?.scrollY ?: 0
+            onAtualizarTela(currentY)
+        }
+
+        // Cabeçalho superior com botão de flecha de voltar no canto esquerdo
+        layout.addView(UIComponents.criarHeaderBar(context, evento.titulo, "Categoria: ${evento.categoria}", onVoltar = onVoltar))
 
         // 1. CARD DE INFORMAÇÕES BÁSICAS DO EVENTO
         val cardInfo = CardView(context).apply {
@@ -115,7 +128,7 @@ object EventDetail {
         }
 
         val tvMapaHeader = TextView(context).apply {
-            text = "🗺️ Localização no Mapa"
+            text = "🗺️ Localização no Mapa (MapLibre)"
             textSize = 16f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(AppColors.COLOR_TEXT_MAIN)
@@ -221,7 +234,7 @@ object EventDetail {
                         evento.id,
                         onSuccess = {
                             Toast.makeText(context, "Evento encerrado com sucesso!", Toast.LENGTH_SHORT).show()
-                            onAtualizarTela()
+                            atualizarManterPosicao()
                         },
                         onError = { error ->
                             Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
@@ -272,13 +285,13 @@ object EventDetail {
             layout.addView(UIComponents.criarBotao(context, "💔 DESFAVORITAR EVENTO", primario = false) {
                 userRepo.removerFavorito(evento.id)
                 Toast.makeText(context, "Removido dos favoritos.", Toast.LENGTH_SHORT).show()
-                onAtualizarTela()
+                atualizarManterPosicao()
             })
         } else {
             layout.addView(UIComponents.criarBotao(context, "❤️ FAVORITAR EVENTO", primario = false) {
                 userRepo.salvarFavorito(evento.id)
                 Toast.makeText(context, "Adicionado aos favoritos!", Toast.LENGTH_SHORT).show()
-                onAtualizarTela()
+                atualizarManterPosicao()
             })
         }
 
@@ -297,7 +310,7 @@ object EventDetail {
             layout.addView(UIComponents.criarBotao(context, "CANCELAR INSCRIÇÃO", primario = false, perigo = true) {
                 userRepo.removerInscricao(evento.id)
                 Toast.makeText(context, "Inscrição cancelada com sucesso.", Toast.LENGTH_SHORT).show()
-                onAtualizarTela()
+                atualizarManterPosicao()
             })
         } else if (evento.encerrado) {
             val tvStatusEncerrado = TextView(context).apply {
@@ -312,20 +325,36 @@ object EventDetail {
             layout.addView(UIComponents.criarBotao(context, "INSCREVER-SE NO EVENTO") {
                 userRepo.salvarInscricao(evento.id)
                 Toast.makeText(context, "Inscrição realizada com sucesso!", Toast.LENGTH_SHORT).show()
-                onAtualizarTela()
+                atualizarManterPosicao()
             })
         }
 
-        // 5. SEÇÃO DE AVALIAÇÃO (De 1 a 5 Estrelas)
-        construirSecaoAvaliacao(context, layout, evento, userRepo, inscrito, onAtualizarTela)
+        // 5. SEÇÃO DE FOTOS DO EVENTO (Câmera / Galeria local)
+        EventMediaComponent.construirSecaoFotos(
+            context = context,
+            layout = layout,
+            evento = evento,
+            userRepo = userRepo,
+            onTirarFotoCamera = onTirarFotoCamera,
+            onEscolherFotoGaleria = onEscolherFotoGaleria,
+            onAtualizarTela = { atualizarManterPosicao() }
+        )
 
-        // 6. SEÇÃO DE COMENTÁRIOS DOS ALUNOS
-        construirSecaoComentarios(context, layout, evento, userRepo, onAtualizarTela)
+        // 6. SEÇÃO DE ÁUDIOS DO EVENTO (Gravação / Reprodução local)
+        EventMediaComponent.construirSecaoAudios(
+            context = context,
+            layout = layout,
+            evento = evento,
+            userRepo = userRepo,
+            onPedirPermissaoAudio = onPedirPermissaoAudio,
+            onAtualizarTela = { atualizarManterPosicao() }
+        )
 
-        // 7. BOTÃO VOLTAR
-        layout.addView(UIComponents.criarBotao(context, "VOLTAR", primario = false) {
-            onVoltar()
-        })
+        // 7. SEÇÃO DE AVALIAÇÃO (De 1 a 5 Estrelas)
+        construirSecaoAvaliacao(context, layout, evento, userRepo, inscrito) { atualizarManterPosicao() }
+
+        // 8. SEÇÃO DE COMENTÁRIOS DOS ALUNOS
+        construirSecaoComentarios(context, layout, evento, userRepo) { atualizarManterPosicao() }
     }
 
     /**
@@ -335,7 +364,7 @@ object EventDetail {
     private fun construirSecaoAvaliacao(
         context: Context,
         layout: LinearLayout,
-        evento: Evento,
+        evento: Event,
         userRepo: UserPreferencesRepository,
         inscrito: Boolean,
         onAtualizarTela: () -> Unit
@@ -467,7 +496,7 @@ object EventDetail {
     private fun construirSecaoComentarios(
         context: Context,
         layout: LinearLayout,
-        evento: Evento,
+        evento: Event,
         userRepo: UserPreferencesRepository,
         onAtualizarTela: () -> Unit
     ) {
@@ -558,7 +587,7 @@ object EventDetail {
                         UIComponents.dpToPx(context, 12)
                     )
                     useCompatPadding = true
-                    setCardBackgroundColor(Color.parseColor("#F1F5F9"))
+                    setCardBackgroundColor(Color.parseColor("#F8FAFC"))
                 }
 
                 val itemLayout = LinearLayout(context).apply {
