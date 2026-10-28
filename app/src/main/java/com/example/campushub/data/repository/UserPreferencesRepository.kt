@@ -6,6 +6,7 @@ import com.example.campushub.data.model.EventAudio
 import com.example.campushub.data.model.EventComment
 import com.example.campushub.data.model.EventPhoto
 import com.example.campushub.data.model.EventRating
+import com.example.campushub.data.model.EventVideo
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -361,7 +362,7 @@ class UserPreferencesRepository(context: Context) {
         val novoAudio = EventAudio(
             eventoId = eventoId,
             caminhoArquivo = caminhoArquivo,
-            duracaoTexto = duracaoTexto,
+            duracaoTexto = caminhoArquivo,
             autorNome = getUsuarioNome().ifEmpty { "Usuário" },
             autorEmail = getUsuarioEmail(),
             dataPublicacao = dataFormatada
@@ -381,5 +382,80 @@ class UserPreferencesRepository(context: Context) {
         }
         val lista = getTodosAudios().filter { it.id != audioId }
         salvarTodosAudios(lista)
+    }
+
+    // =========================================================
+    // VÍDEOS DOS EVENTOS
+    // =========================================================
+
+    fun getTodosVideos(): List<EventVideo> {
+        val jsonStr = prefs.getString("user_videos", "[]") ?: "[]"
+        val lista = mutableListOf<EventVideo>()
+        try {
+            val jsonArray = JSONArray(jsonStr)
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                lista.add(
+                    EventVideo(
+                        id = obj.optString("id", UUID.randomUUID().toString()),
+                        eventoId = obj.optInt("eventoId"),
+                        caminhoArquivo = obj.optString("caminhoArquivo"),
+                        autorNome = obj.optString("autorNome"),
+                        autorEmail = obj.optString("autorEmail"),
+                        dataPublicacao = obj.optString("dataPublicacao")
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return lista
+    }
+
+    private fun salvarTodosVideos(lista: List<EventVideo>) {
+        val jsonArray = JSONArray()
+        for (v in lista) {
+            val obj = JSONObject().apply {
+                put("id", v.id)
+                put("eventoId", v.eventoId)
+                put("caminhoArquivo", v.caminhoArquivo)
+                put("autorNome", v.autorNome)
+                put("autorEmail", v.autorEmail)
+                put("dataPublicacao", v.dataPublicacao)
+            }
+            jsonArray.put(obj)
+        }
+        prefs.edit().putString("user_videos", jsonArray.toString()).apply()
+    }
+
+    fun getVideosDoEvento(eventoId: Int): List<EventVideo> {
+        return getTodosVideos().filter { it.eventoId == eventoId }
+    }
+
+    fun adicionarVideo(eventoId: Int, caminhoArquivo: String) {
+        val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        val dataFormatada = sdf.format(Date())
+        val novoVideo = EventVideo(
+            eventoId = eventoId,
+            caminhoArquivo = caminhoArquivo,
+            autorNome = getUsuarioNome().ifEmpty { "Usuário" },
+            autorEmail = getUsuarioEmail(),
+            dataPublicacao = dataFormatada
+        )
+        val lista = getTodosVideos().toMutableList()
+        lista.add(novoVideo)
+        salvarTodosVideos(lista)
+    }
+
+    fun deletarVideo(videoId: String) {
+        val video = getTodosVideos().find { it.id == videoId }
+        if (video != null) {
+            try {
+                val f = File(video.caminhoArquivo)
+                if (f.exists()) f.delete()
+            } catch (_: Exception) {}
+        }
+        val lista = getTodosVideos().filter { it.id != videoId }
+        salvarTodosVideos(lista)
     }
 }

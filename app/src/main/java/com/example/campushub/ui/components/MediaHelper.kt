@@ -1,16 +1,24 @@
 package com.example.campushub.ui.components
 
 import android.content.Context
+import android.graphics.Color
+import android.graphics.Typeface
 import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.net.Uri
+import android.view.Gravity
+import android.widget.LinearLayout
+import android.widget.MediaController
+import android.widget.TextView
+import android.widget.VideoView
+import androidx.appcompat.app.AlertDialog
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.UUID
 
 /**
- * Utilitário responsável por lidar com gravação/reprodução de áudio e
+ * Utilitário responsável por lidar com gravação/reprodução de áudio, salvamento de vídeos e
  * persistência de fotos salvas localmente no armazenamento do dispositivo.
  */
 object MediaHelper {
@@ -166,5 +174,101 @@ object MediaHelper {
         } catch (_: Exception) {
             false
         }
+    }
+
+    // =========================================================
+    // VÍDEOS (GRAVAÇÃO, GALERIA E REPRODUÇÃO LOCAL)
+    // =========================================================
+
+    /**
+     * Copia um vídeo selecionado da galeria (via [Uri]) para o diretório
+     * de arquivos internos da aplicação e retorna o caminho absoluto do arquivo.
+     */
+    fun salvarVideoGaleriaLocalmente(context: Context, videoUri: Uri): String? {
+        return try {
+            val pastaVideos = File(context.filesDir, "event_videos").apply {
+                if (!exists()) mkdirs()
+            }
+            val arquivoDestino = File(pastaVideos, "video_${UUID.randomUUID()}.mp4")
+
+            val inputStream: InputStream? = context.contentResolver.openInputStream(videoUri)
+            val outputStream = FileOutputStream(arquivoDestino)
+
+            if (inputStream != null) {
+                inputStream.use { input ->
+                    outputStream.use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                arquivoDestino.absolutePath
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * Prepara e retorna um novo arquivo [File] para armazenar o vídeo capturado pela câmera.
+     */
+    fun criarArquivoVideoCamera(context: Context): File {
+        val pastaVideos = File(context.filesDir, "event_videos").apply {
+            if (!exists()) mkdirs()
+        }
+        return File(pastaVideos, "camera_${UUID.randomUUID()}.mp4")
+    }
+
+    /**
+     * Abre um diálogo interativo com [VideoView] e controles de reprodução para assistir ao vídeo do evento.
+     */
+    fun abrirPlayerVideoDialog(context: Context, caminhoArquivo: String, titulo: String = "Vídeo do Evento") {
+        val file = File(caminhoArquivo)
+        if (!file.exists()) return
+
+        val dialog = AlertDialog.Builder(context).create()
+        val containerDialog = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(
+                UIComponents.dpToPx(context, 16),
+                UIComponents.dpToPx(context, 16),
+                UIComponents.dpToPx(context, 16),
+                UIComponents.dpToPx(context, 16)
+            )
+            setBackgroundColor(Color.parseColor("#0F172A"))
+        }
+
+        val tvTitulo = TextView(context).apply {
+            text = "🎬 $titulo"
+            textSize = 15f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(Color.WHITE)
+            setPadding(0, 0, 0, UIComponents.dpToPx(context, 10))
+        }
+        containerDialog.addView(tvTitulo)
+
+        val videoView = VideoView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                UIComponents.dpToPx(context, 260)
+            )
+            setVideoPath(caminhoArquivo)
+            val mediaController = MediaController(context)
+            mediaController.setAnchorView(this)
+            setMediaController(mediaController)
+            start()
+        }
+        containerDialog.addView(videoView)
+
+        val btnFechar = UIComponents.criarBotao(context, "❌ FECHAR VÍDEO", primario = true) {
+            videoView.stopPlayback()
+            dialog.dismiss()
+        }
+        containerDialog.addView(btnFechar)
+
+        dialog.setView(containerDialog)
+        dialog.show()
     }
 }

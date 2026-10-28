@@ -12,14 +12,14 @@ import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import com.example.campushub.data.model.Event
 import com.example.campushub.data.model.EventPhoto
+import com.example.campushub.data.model.EventVideo
 import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.theme.AppColors
 import java.io.File
 
 /**
- * Componentes de UI reutilizáveis para exibir e gerenciar as Seções de Fotos e Áudios do Evento.
- * Restringe publicação exclusivamente a alunos inscritos no evento, centraliza fotos
- * e permite expandir imagens em tamanho cheio.
+ * Componentes de UI reutilizáveis para exibir e gerenciar as Seções de Fotos, Áudios e Vídeos do Evento.
+ * Restringe publicação exclusivamente a alunos inscritos no evento e gerencia o salvamento local.
  */
 object EventMediaComponent {
 
@@ -290,6 +290,215 @@ object EventMediaComponent {
 
         dialog.setView(containerDialog)
         dialog.show()
+    }
+
+    // =========================================================
+    // SEÇÃO DE VÍDEOS DO EVENTO
+    // =========================================================
+
+    fun construirSecaoVideos(
+        context: Context,
+        layout: LinearLayout,
+        evento: Event,
+        userRepo: UserPreferencesRepository,
+        onGravarVideoCamera: () -> Unit,
+        onEscolherVideoGaleria: () -> Unit,
+        onAtualizarTela: () -> Unit
+    ) {
+        val inscrito = userRepo.isInscrito(evento.id)
+
+        val cardVideos = CardView(context).apply {
+            radius = UIComponents.dpToPx(context, 16).toFloat()
+            cardElevation = UIComponents.dpToPx(context, 4).toFloat()
+            setContentPadding(
+                UIComponents.dpToPx(context, 16),
+                UIComponents.dpToPx(context, 16),
+                UIComponents.dpToPx(context, 16),
+                UIComponents.dpToPx(context, 16)
+            )
+            useCompatPadding = true
+            setCardBackgroundColor(AppColors.COLOR_CARD_BG)
+        }
+
+        val layoutVideos = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        val tvTitulo = TextView(context).apply {
+            text = "🎬 Vídeos do Evento"
+            textSize = 18f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(AppColors.COLOR_TEXT_MAIN)
+            setPadding(0, 0, 0, UIComponents.dpToPx(context, 4))
+        }
+        layoutVideos.addView(tvTitulo)
+
+        val tvSub = TextView(context).apply {
+            text = "Grave um vídeo curto ou selecione da galeria para publicar no evento (Clique para assistir)."
+            textSize = 13f
+            setTextColor(AppColors.COLOR_TEXT_MUTED)
+            setPadding(0, 0, 0, UIComponents.dpToPx(context, 10))
+        }
+        layoutVideos.addView(tvSub)
+
+        // Restrição: Apenas alunos inscritos podem enviar/gravar vídeos
+        if (inscrito) {
+            val rowBotoesVideo = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                weightSum = 2f
+            }
+
+            val btnCamera = UIComponents.criarBotao(context, "🎥 GRAVAR VÍDEO", primario = true) {
+                onGravarVideoCamera()
+            }.apply {
+                layoutParams = LinearLayout.LayoutParams(0, UIComponents.dpToPx(context, 44), 1f).apply {
+                    setMargins(0, 0, UIComponents.dpToPx(context, 4), 0)
+                }
+            }
+            rowBotoesVideo.addView(btnCamera)
+
+            val btnGaleria = UIComponents.criarBotao(context, "🎬 GALERIA", primario = false) {
+                onEscolherVideoGaleria()
+            }.apply {
+                layoutParams = LinearLayout.LayoutParams(0, UIComponents.dpToPx(context, 44), 1f).apply {
+                    setMargins(UIComponents.dpToPx(context, 4), 0, 0, 0)
+                }
+            }
+            rowBotoesVideo.addView(btnGaleria)
+
+            layoutVideos.addView(rowBotoesVideo)
+        } else {
+            val tvInfoNaoInscrito = TextView(context).apply {
+                text = "⚠️ Inscreva-se neste evento para poder gravar e enviar vídeos."
+                textSize = 13f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(Color.parseColor("#D97706"))
+                setPadding(0, 0, 0, UIComponents.dpToPx(context, 8))
+            }
+            layoutVideos.addView(tvInfoNaoInscrito)
+        }
+
+        // Lista de Vídeos Publicados
+        val videosLista = userRepo.getVideosDoEvento(evento.id)
+
+        if (videosLista.isEmpty()) {
+            val tvSemVideos = TextView(context).apply {
+                text = "Nenhum vídeo publicado para este evento ainda."
+                textSize = 14f
+                setTextColor(AppColors.COLOR_TEXT_MUTED)
+                setPadding(0, UIComponents.dpToPx(context, 16), 0, UIComponents.dpToPx(context, 8))
+                gravity = Gravity.CENTER
+            }
+            layoutVideos.addView(tvSemVideos)
+        } else {
+            val scrollHorizontal = HorizontalScrollView(context).apply {
+                isHorizontalScrollBarEnabled = false
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, UIComponents.dpToPx(context, 12), 0, 0)
+                }
+            }
+
+            val rowGaleria = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+
+            val usuarioEmailAtual = userRepo.getUsuarioEmail()
+
+            videosLista.forEach { video ->
+                val file = File(video.caminhoArquivo)
+                if (file.exists()) {
+                    val cardVideoItem = CardView(context).apply {
+                        radius = UIComponents.dpToPx(context, 12).toFloat()
+                        cardElevation = UIComponents.dpToPx(context, 2).toFloat()
+                        useCompatPadding = true
+                        setCardBackgroundColor(Color.parseColor("#F8FAFC"))
+                        layoutParams = LinearLayout.LayoutParams(
+                            UIComponents.dpToPx(context, 190),
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            setMargins(0, 0, UIComponents.dpToPx(context, 10), 0)
+                        }
+                    }
+
+                    val containerVideo = LinearLayout(context).apply {
+                        orientation = LinearLayout.VERTICAL
+                        gravity = Gravity.CENTER_HORIZONTAL
+                        setPadding(
+                            UIComponents.dpToPx(context, 8),
+                            UIComponents.dpToPx(context, 8),
+                            UIComponents.dpToPx(context, 8),
+                            UIComponents.dpToPx(context, 8)
+                        )
+                    }
+
+                    val btnAssistir = UIComponents.criarBotao(context, "▶️ ASSISTIR VÍDEO", primario = true) {
+                        MediaHelper.abrirPlayerVideoDialog(context, video.caminhoArquivo, "Vídeo por ${video.autorNome}")
+                    }.apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            UIComponents.dpToPx(context, 40)
+                        )
+                    }
+                    containerVideo.addView(btnAssistir)
+
+                    val tvAutor = TextView(context).apply {
+                        text = "👤 ${video.autorNome}"
+                        textSize = 12f
+                        typeface = Typeface.DEFAULT_BOLD
+                        setTextColor(AppColors.COLOR_TEXT_MAIN)
+                        gravity = Gravity.CENTER
+                        setPadding(0, UIComponents.dpToPx(context, 4), 0, 0)
+                    }
+                    containerVideo.addView(tvAutor)
+
+                    val tvData = TextView(context).apply {
+                        text = video.dataPublicacao
+                        textSize = 10f
+                        setTextColor(AppColors.COLOR_TEXT_MUTED)
+                        gravity = Gravity.CENTER
+                    }
+                    containerVideo.addView(tvData)
+
+                    if (video.autorEmail.equals(usuarioEmailAtual, ignoreCase = true) && usuarioEmailAtual.isNotEmpty()) {
+                        val btnExcluir = TextView(context).apply {
+                            text = "🗑️ Excluir Vídeo"
+                            textSize = 11f
+                            typeface = Typeface.DEFAULT_BOLD
+                            setTextColor(Color.parseColor("#DC2626"))
+                            gravity = Gravity.CENTER
+                            setPadding(0, UIComponents.dpToPx(context, 4), 0, 0)
+                            setOnClickListener {
+                                userRepo.deletarVideo(video.id)
+                                Toast.makeText(context, "Vídeo excluído.", Toast.LENGTH_SHORT).show()
+                                onAtualizarTela()
+                            }
+                        }
+                        containerVideo.addView(btnExcluir)
+                    }
+
+                    cardVideoItem.addView(containerVideo)
+                    rowGaleria.addView(cardVideoItem)
+                }
+            }
+
+            scrollHorizontal.addView(rowGaleria)
+            layoutVideos.addView(scrollHorizontal)
+        }
+
+        cardVideos.addView(layoutVideos)
+
+        val paramsCardVideos = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply {
+            setMargins(0, UIComponents.dpToPx(context, 10), 0, UIComponents.dpToPx(context, 10))
+        }
+
+        layout.addView(cardVideos, paramsCardVideos)
     }
 
     // =========================================================

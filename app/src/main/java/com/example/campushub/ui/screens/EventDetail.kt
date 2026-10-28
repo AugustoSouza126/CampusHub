@@ -23,7 +23,7 @@ import java.util.Locale
  * Responsável por construir a Tela de Detalhes do Evento.
  * Exibe informações completas (data, horário, local, endereço, mapa MapLibre),
  * painel exclusivo para o criador do evento (editar/encerrar/excluir),
- * gerencia inscrição, favoritos, fotos publicadas (câmera/galeria), áudios gravados,
+ * gerencia inscrição, favoritos, fotos publicadas, áudios gravados, vídeos curtos,
  * avaliações (1 a 5 estrelas) e comentários dos alunos.
  */
 object EventDetail {
@@ -41,6 +41,8 @@ object EventDetail {
         onTirarFotoCamera: () -> Unit = {},
         onEscolherFotoGaleria: () -> Unit = {},
         onPedirPermissaoAudio: () -> Unit = {},
+        onGravarVideoCamera: () -> Unit = {},
+        onEscolherVideoGaleria: () -> Unit = {},
         onAtualizarTela: (restoreScrollY: Int) -> Unit,
         onVoltar: () -> Unit
     ) {
@@ -340,7 +342,18 @@ object EventDetail {
             onAtualizarTela = { atualizarManterPosicao() }
         )
 
-        // 6. SEÇÃO DE ÁUDIOS DO EVENTO (Gravação / Reprodução local)
+        // 6. SEÇÃO DE VÍDEOS DO EVENTO (Câmera / Galeria local)
+        EventMediaComponent.construirSecaoVideos(
+            context = context,
+            layout = layout,
+            evento = evento,
+            userRepo = userRepo,
+            onGravarVideoCamera = onGravarVideoCamera,
+            onEscolherVideoGaleria = onEscolherVideoGaleria,
+            onAtualizarTela = { atualizarManterPosicao() }
+        )
+
+        // 7. SEÇÃO DE ÁUDIOS DO EVENTO (Gravação / Reprodução local)
         EventMediaComponent.construirSecaoAudios(
             context = context,
             layout = layout,
@@ -350,10 +363,10 @@ object EventDetail {
             onAtualizarTela = { atualizarManterPosicao() }
         )
 
-        // 7. SEÇÃO DE AVALIAÇÃO (De 1 a 5 Estrelas)
+        // 8. SEÇÃO DE AVALIAÇÃO (De 1 a 5 Estrelas)
         construirSecaoAvaliacao(context, layout, evento, userRepo, inscrito) { atualizarManterPosicao() }
 
-        // 8. SEÇÃO DE COMENTÁRIOS DOS ALUNOS
+        // 9. SEÇÃO DE COMENTÁRIOS DOS ALUNOS
         construirSecaoComentarios(context, layout, evento, userRepo) { atualizarManterPosicao() }
     }
 

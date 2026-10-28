@@ -31,7 +31,7 @@ import java.io.File
 /**
  * Atividade Principal do CampusHub.
  * Atua como o orquestrador de navegação do aplicativo, gerenciando as telas,
- * permissões e lançadores de câmera e galeria para publicação de fotos e áudios.
+ * permissões e lançadores de câmera e galeria para publicação de fotos, áudios e vídeos.
  */
 class MainActivity : AppCompatActivity() {
 
@@ -43,9 +43,10 @@ class MainActivity : AppCompatActivity() {
     private var currentDetailLayout: LinearLayout? = null
     private var currentDetailScrollView: ScrollView? = null
 
-    // Estados e lançadores de mídia (Câmera e Galeria)
+    // Estados e lançadores de mídia (Câmera, Galeria, Gravação de Vídeo e Áudio)
     private var eventoIdAtualParaMidia: Int = 0
     private var photoFileCamera: File? = null
+    private var videoFileCamera: File? = null
     private var onMidiaAtualizadaCallback: (() -> Unit)? = null
 
     private val takePictureLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
@@ -62,6 +63,25 @@ class MainActivity : AppCompatActivity() {
             if (caminhoSalvo != null) {
                 userRepo.adicionarFoto(eventoIdAtualParaMidia, caminhoSalvo)
                 Toast.makeText(this, "Foto da galeria publicada no evento!", Toast.LENGTH_SHORT).show()
+                onMidiaAtualizadaCallback?.invoke()
+            }
+        }
+    }
+
+    private val recordVideoLauncher = registerForActivityResult(ActivityResultContracts.CaptureVideo()) { success ->
+        if (success && videoFileCamera != null && videoFileCamera!!.exists()) {
+            userRepo.adicionarVideo(eventoIdAtualParaMidia, videoFileCamera!!.absolutePath)
+            Toast.makeText(this, "Vídeo gravado e publicado no evento!", Toast.LENGTH_SHORT).show()
+            onMidiaAtualizadaCallback?.invoke()
+        }
+    }
+
+    private val pickVideoGalleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) {
+            val caminhoSalvo = MediaHelper.salvarVideoGaleriaLocalmente(this, uri)
+            if (caminhoSalvo != null) {
+                userRepo.adicionarVideo(eventoIdAtualParaMidia, caminhoSalvo)
+                Toast.makeText(this, "Vídeo da galeria publicado no evento!", Toast.LENGTH_SHORT).show()
                 onMidiaAtualizadaCallback?.invoke()
             }
         }
@@ -141,7 +161,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // =========================================================
-    // LANÇADORES DE CÂMERA, GALERIA E ÁUDIO
+    // LANÇADORES DE CÂMERA, GALERIA, VÍDEO E ÁUDIO
     // =========================================================
 
     private fun tirarFotoCamera(eventoId: Int, onConcluido: () -> Unit) {
@@ -167,6 +187,31 @@ class MainActivity : AppCompatActivity() {
         eventoIdAtualParaMidia = eventoId
         onMidiaAtualizadaCallback = onConcluido
         pickGalleryLauncher.launch("image/*")
+    }
+
+    private fun gravarVideoCamera(eventoId: Int, onConcluido: () -> Unit) {
+        eventoIdAtualParaMidia = eventoId
+        onMidiaAtualizadaCallback = onConcluido
+
+        val temPermissaoCamera = ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        if (!temPermissaoCamera) {
+            requestPermissionLauncher.launch(arrayOf(android.Manifest.permission.CAMERA))
+            return
+        }
+
+        try {
+            videoFileCamera = MediaHelper.criarArquivoVideoCamera(this)
+            val uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", videoFileCamera!!)
+            recordVideoLauncher.launch(uri)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Erro ao abrir câmera para vídeo: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun escolherVideoGaleria(eventoId: Int, onConcluido: () -> Unit) {
+        eventoIdAtualParaMidia = eventoId
+        onMidiaAtualizadaCallback = onConcluido
+        pickVideoGalleryLauncher.launch("video/*")
     }
 
     private fun solicitarPermissaoAudio(onConcluido: () -> Unit) {
@@ -303,6 +348,8 @@ class MainActivity : AppCompatActivity() {
                         onTirarFotoCamera = { tirarFotoCamera(eventoAtualizado.id) { recarregarDetalhesEmMesmaPosicao(eventoAtualizado) } },
                         onEscolherFotoGaleria = { escolherFotoGaleria(eventoAtualizado.id) { recarregarDetalhesEmMesmaPosicao(eventoAtualizado) } },
                         onPedirPermissaoAudio = { solicitarPermissaoAudio { recarregarDetalhesEmMesmaPosicao(eventoAtualizado) } },
+                        onGravarVideoCamera = { gravarVideoCamera(eventoAtualizado.id) { recarregarDetalhesEmMesmaPosicao(eventoAtualizado) } },
+                        onEscolherVideoGaleria = { escolherVideoGaleria(eventoAtualizado.id) { recarregarDetalhesEmMesmaPosicao(eventoAtualizado) } },
                         onAtualizarTela = { recarregarDetalhesEmMesmaPosicao(eventoAtualizado) },
                         onVoltar = {
                             limparDetalhesCache()
@@ -326,6 +373,8 @@ class MainActivity : AppCompatActivity() {
                         onTirarFotoCamera = { tirarFotoCamera(evento.id) { recarregarDetalhesEmMesmaPosicao(evento) } },
                         onEscolherFotoGaleria = { escolherFotoGaleria(evento.id) { recarregarDetalhesEmMesmaPosicao(evento) } },
                         onPedirPermissaoAudio = { solicitarPermissaoAudio { recarregarDetalhesEmMesmaPosicao(evento) } },
+                        onGravarVideoCamera = { gravarVideoCamera(evento.id) { recarregarDetalhesEmMesmaPosicao(evento) } },
+                        onEscolherVideoGaleria = { escolherVideoGaleria(evento.id) { recarregarDetalhesEmMesmaPosicao(evento) } },
                         onAtualizarTela = { recarregarDetalhesEmMesmaPosicao(evento) },
                         onVoltar = {
                             limparDetalhesCache()
@@ -359,6 +408,8 @@ class MainActivity : AppCompatActivity() {
             onTirarFotoCamera = { tirarFotoCamera(evento.id) { recarregarDetalhesEmMesmaPosicao(evento) } },
             onEscolherFotoGaleria = { escolherFotoGaleria(evento.id) { recarregarDetalhesEmMesmaPosicao(evento) } },
             onPedirPermissaoAudio = { solicitarPermissaoAudio { recarregarDetalhesEmMesmaPosicao(evento) } },
+            onGravarVideoCamera = { gravarVideoCamera(evento.id) { recarregarDetalhesEmMesmaPosicao(evento) } },
+            onEscolherVideoGaleria = { escolherVideoGaleria(evento.id) { recarregarDetalhesEmMesmaPosicao(evento) } },
             onAtualizarTela = { recarregarDetalhesEmMesmaPosicao(evento) },
             onVoltar = {
                 limparDetalhesCache()
