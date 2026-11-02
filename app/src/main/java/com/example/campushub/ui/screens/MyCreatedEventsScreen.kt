@@ -110,18 +110,7 @@ object MyCreatedEventsScreen {
         onVerDetalhes: (Event) -> Unit,
         onAtualizarLista: () -> Unit
     ) {
-        val card = CardView(context).apply {
-            radius = UIComponents.dpToPx(context, 16).toFloat()
-            cardElevation = UIComponents.dpToPx(context, 4).toFloat()
-            setContentPadding(
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16)
-            )
-            useCompatPadding = true
-            setCardBackgroundColor(AppColors.COLOR_CARD_BG)
-        }
+        val card = UIComponents.criarCardView(context, 16f, 4f, 16, AppColors.COLOR_CARD_BG)
 
         val layoutInterno = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL

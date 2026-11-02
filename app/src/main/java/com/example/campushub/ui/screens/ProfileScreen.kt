@@ -32,13 +32,7 @@ object ProfileScreen {
 
         layout.addView(UIComponents.criarHeaderBar(context, "Meu Perfil", "Gerencie os dados da sua conta acadêmica."))
 
-        val cardPerfil = CardView(context).apply {
-            radius = dpToPx(16).toFloat()
-            cardElevation = dpToPx(4).toFloat()
-            setContentPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(20))
-            useCompatPadding = true
-            setCardBackgroundColor(AppColors.COLOR_CARD_BG)
-        }
+        val cardPerfil = UIComponents.criarCardView(context, 16f, 4f, 20, AppColors.COLOR_CARD_BG)
 
         val innerPerfil = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL

@@ -38,18 +38,7 @@ object EventMediaComponent {
     ) {
         val inscrito = userRepo.isInscrito(evento.id)
 
-        val cardFotos = CardView(context).apply {
-            radius = UIComponents.dpToPx(context, 16).toFloat()
-            cardElevation = UIComponents.dpToPx(context, 4).toFloat()
-            setContentPadding(
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16)
-            )
-            useCompatPadding = true
-            setCardBackgroundColor(AppColors.COLOR_CARD_BG)
-        }
+        val cardFotos = UIComponents.criarCardView(context, 16f, 4f, 16, AppColors.COLOR_CARD_BG)
 
         val layoutFotos = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -142,11 +131,7 @@ object EventMediaComponent {
             fotosLista.forEach { foto ->
                 val file = File(foto.caminhoArquivo)
                 if (file.exists()) {
-                    val cardFotoItem = CardView(context).apply {
-                        radius = UIComponents.dpToPx(context, 12).toFloat()
-                        cardElevation = UIComponents.dpToPx(context, 2).toFloat()
-                        useCompatPadding = true
-                        setCardBackgroundColor(Color.parseColor("#F8FAFC"))
+                    val cardFotoItem = UIComponents.criarCardView(context, 12f, 2f, 0, Color.parseColor("#F8FAFC")).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             UIComponents.dpToPx(context, 180),
                             LinearLayout.LayoutParams.WRAP_CONTENT
@@ -307,18 +292,7 @@ object EventMediaComponent {
     ) {
         val inscrito = userRepo.isInscrito(evento.id)
 
-        val cardVideos = CardView(context).apply {
-            radius = UIComponents.dpToPx(context, 16).toFloat()
-            cardElevation = UIComponents.dpToPx(context, 4).toFloat()
-            setContentPadding(
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16)
-            )
-            useCompatPadding = true
-            setCardBackgroundColor(AppColors.COLOR_CARD_BG)
-        }
+        val cardVideos = UIComponents.criarCardView(context, 16f, 4f, 16, AppColors.COLOR_CARD_BG)
 
         val layoutVideos = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -411,11 +385,7 @@ object EventMediaComponent {
             videosLista.forEach { video ->
                 val file = File(video.caminhoArquivo)
                 if (file.exists()) {
-                    val cardVideoItem = CardView(context).apply {
-                        radius = UIComponents.dpToPx(context, 12).toFloat()
-                        cardElevation = UIComponents.dpToPx(context, 2).toFloat()
-                        useCompatPadding = true
-                        setCardBackgroundColor(Color.parseColor("#F8FAFC"))
+                    val cardVideoItem = UIComponents.criarCardView(context, 12f, 2f, 0, Color.parseColor("#F8FAFC")).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             UIComponents.dpToPx(context, 190),
                             LinearLayout.LayoutParams.WRAP_CONTENT
@@ -515,18 +485,7 @@ object EventMediaComponent {
     ) {
         val inscrito = userRepo.isInscrito(evento.id)
 
-        val cardAudios = CardView(context).apply {
-            radius = UIComponents.dpToPx(context, 16).toFloat()
-            cardElevation = UIComponents.dpToPx(context, 4).toFloat()
-            setContentPadding(
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16)
-            )
-            useCompatPadding = true
-            setCardBackgroundColor(AppColors.COLOR_CARD_BG)
-        }
+        val cardAudios = UIComponents.criarCardView(context, 16f, 4f, 16, AppColors.COLOR_CARD_BG)
 
         val layoutAudios = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -631,18 +590,7 @@ object EventMediaComponent {
             val usuarioEmailAtual = userRepo.getUsuarioEmail()
 
             audiosLista.forEach { audio ->
-                val cardItem = CardView(context).apply {
-                    radius = UIComponents.dpToPx(context, 12).toFloat()
-                    cardElevation = UIComponents.dpToPx(context, 1).toFloat()
-                    setContentPadding(
-                        UIComponents.dpToPx(context, 12),
-                        UIComponents.dpToPx(context, 12),
-                        UIComponents.dpToPx(context, 12),
-                        UIComponents.dpToPx(context, 12)
-                    )
-                    useCompatPadding = true
-                    setCardBackgroundColor(Color.parseColor("#F8FAFC"))
-                }
+                val cardItem = UIComponents.criarCardView(context, 12f, 1f, 12, Color.parseColor("#F8FAFC"))
 
                 val itemLayout = LinearLayout(context).apply {
                     orientation = LinearLayout.VERTICAL

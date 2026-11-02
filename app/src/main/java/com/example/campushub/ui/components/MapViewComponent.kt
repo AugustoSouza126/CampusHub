@@ -41,7 +41,7 @@ object MapViewComponent {
     ): View {
         try {
             MapLibre.getInstance(context)
-        } catch (_: Exception) {}
+        } catch (_: Throwable) {}
 
         val container = FrameLayout(context).apply {
             layoutParams = LinearLayout.LayoutParams(
@@ -54,51 +54,64 @@ object MapViewComponent {
             clipToOutline = true
         }
 
-        val mapView = MapView(context).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
+        val mapView: View = try {
+            MapView(context).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            }
+        } catch (_: Throwable) {
+            View(context).apply {
+                layoutParams = FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            }
         }
 
         container.addView(mapView)
 
-        mapView.onCreate(null)
+        if (mapView is MapView) {
+            try {
+                mapView.onCreate(null)
 
-        val lifecycleOwner = context as? LifecycleOwner
-        if (lifecycleOwner != null) {
-            val observer = object : DefaultLifecycleObserver {
-                override fun onStart(owner: LifecycleOwner) { mapView.onStart() }
-                override fun onResume(owner: LifecycleOwner) { mapView.onResume() }
-                override fun onPause(owner: LifecycleOwner) { mapView.onPause() }
-                override fun onStop(owner: LifecycleOwner) { mapView.onStop() }
-                override fun onDestroy(owner: LifecycleOwner) {
-                    mapView.onDestroy()
-                    owner.lifecycle.removeObserver(this)
+                val lifecycleOwner = context as? LifecycleOwner
+                if (lifecycleOwner != null) {
+                    val observer = object : DefaultLifecycleObserver {
+                        override fun onStart(owner: LifecycleOwner) { mapView.onStart() }
+                        override fun onResume(owner: LifecycleOwner) { mapView.onResume() }
+                        override fun onPause(owner: LifecycleOwner) { mapView.onPause() }
+                        override fun onStop(owner: LifecycleOwner) { mapView.onStop() }
+                        override fun onDestroy(owner: LifecycleOwner) {
+                            mapView.onDestroy()
+                            owner.lifecycle.removeObserver(this)
+                        }
+                    }
+                    lifecycleOwner.lifecycle.addObserver(observer)
                 }
-            }
-            lifecycleOwner.lifecycle.addObserver(observer)
-        }
 
-        mapView.getMapAsync { maplibreMap ->
-            maplibreMap.setStyle(Style.Builder().fromUri(MAP_STYLE_URL)) { _ ->
-                val pontoLatLng = LatLng(latitude, longitude)
-                maplibreMap.moveCamera(
-                    CameraUpdateFactory.newCameraPosition(
-                        CameraPosition.Builder()
-                            .target(pontoLatLng)
-                            .zoom(zoom)
-                            .build()
-                    )
-                )
+                mapView.getMapAsync { maplibreMap ->
+                    maplibreMap.setStyle(Style.Builder().fromUri(MAP_STYLE_URL)) { _ ->
+                        val pontoLatLng = LatLng(latitude, longitude)
+                        maplibreMap.moveCamera(
+                            CameraUpdateFactory.newCameraPosition(
+                                CameraPosition.Builder()
+                                    .target(pontoLatLng)
+                                    .zoom(zoom)
+                                    .build()
+                            )
+                        )
 
-                maplibreMap.addMarker(
-                    MarkerOptions()
-                        .position(pontoLatLng)
-                        .title(titulo)
-                        .snippet(subtitulo)
-                )
-            }
+                        maplibreMap.addMarker(
+                            MarkerOptions()
+                                .position(pontoLatLng)
+                                .title(titulo)
+                                .snippet(subtitulo)
+                        )
+                    }
+                }
+            } catch (_: Throwable) {}
         }
 
         return container

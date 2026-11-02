@@ -9,6 +9,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.cardview.widget.CardView
 import com.example.campushub.ui.theme.AppColors
 import com.google.android.material.button.MaterialButton
 
@@ -91,6 +92,53 @@ object UIComponents {
     }
 
     /**
+     * Cria e retorna uma instância de [Button] compatível (MaterialButton com fallback para Button padrão).
+     */
+    fun criarButtonInstance(context: Context): Button {
+        return try {
+            MaterialButton(context)
+        } catch (_: Throwable) {
+            Button(context)
+        }
+    }
+
+    /**
+     * Cria e retorna um [FrameLayout] estilizado como Card (CardView com fallback para FrameLayout simples).
+     */
+    fun criarCardView(
+        context: Context,
+        radiusDp: Float = 16f,
+        elevationDp: Float = 4f,
+        paddingDp: Int = 16,
+        bgColor: Int = AppColors.COLOR_CARD_BG
+    ): FrameLayout {
+        return try {
+            CardView(context).apply {
+                radius = dpToPx(context, radiusDp.toInt()).toFloat()
+                cardElevation = dpToPx(context, elevationDp.toInt()).toFloat()
+                setContentPadding(
+                    dpToPx(context, paddingDp),
+                    dpToPx(context, paddingDp),
+                    dpToPx(context, paddingDp),
+                    dpToPx(context, paddingDp)
+                )
+                useCompatPadding = true
+                setCardBackgroundColor(bgColor)
+            }
+        } catch (_: Throwable) {
+            FrameLayout(context).apply {
+                background = criarShape(context, bgColor, AppColors.COLOR_STROKE, 1, radiusDp)
+                setPadding(
+                    dpToPx(context, paddingDp),
+                    dpToPx(context, paddingDp),
+                    dpToPx(context, paddingDp),
+                    dpToPx(context, paddingDp)
+                )
+            }
+        }
+    }
+
+    /**
      * Cria e retorna um [Button] (MaterialButton) estilizado de acordo com o tipo visual:
      * - Primário: Fundo Azul Real e texto BRANCO PURO.
      * - Secundário: Fundo claro neutro e texto escuro grafite.
@@ -103,7 +151,7 @@ object UIComponents {
         perigo: Boolean = false,
         acao: () -> Unit
     ): Button {
-        return MaterialButton(context).apply {
+        return criarButtonInstance(context).apply {
             this.text = texto
             setOnClickListener { acao() }
             textSize = 14f

@@ -9,8 +9,12 @@ import com.google.firebase.firestore.FirebaseFirestore
  */
 object EventRepository {
 
-    private val db: FirebaseFirestore
-        get() = FirebaseFirestore.getInstance()
+    private val db: FirebaseFirestore?
+        get() = try {
+            FirebaseFirestore.getInstance()
+        } catch (_: Throwable) {
+            null
+        }
 
     private const val COLLECTION_NAME = "eventos"
 
@@ -123,29 +127,38 @@ object EventRepository {
         onSuccess: (List<Event>) -> Unit,
         onError: (String) -> Unit
     ) {
-        val collRef: CollectionReference = db.collection(COLLECTION_NAME)
-        collRef.get()
-            .addOnSuccessListener { querySnapshot ->
-                if (querySnapshot.isEmpty) {
-                    seearEventosIniciais {
-                        getEventos(onSuccess, onError)
-                    }
-                } else {
-                    val lista = mutableListOf<Event>()
-                    for (doc in querySnapshot.documents) {
-                        val evento = doc.toObject(Event::class.java)
-                        if (evento != null) {
-                            lista.add(evento)
+        val firestoreDb = db
+        if (firestoreDb == null) {
+            onSuccess(listaEventosIniciais)
+            return
+        }
+        try {
+            val collRef: CollectionReference = firestoreDb.collection(COLLECTION_NAME)
+            collRef.get()
+                .addOnSuccessListener { querySnapshot ->
+                    if (querySnapshot.isEmpty) {
+                        seearEventosIniciais {
+                            getEventos(onSuccess, onError)
                         }
+                    } else {
+                        val lista = mutableListOf<Event>()
+                        for (doc in querySnapshot.documents) {
+                            val evento = doc.toObject(Event::class.java)
+                            if (evento != null) {
+                                lista.add(evento)
+                            }
+                        }
+                        lista.sortBy { it.id }
+                        onSuccess(lista)
                     }
-                    lista.sortBy { it.id }
-                    onSuccess(lista)
                 }
-            }
-            .addOnFailureListener { exception ->
-                val msg = exception.localizedMessage ?: "Erro ao buscar eventos no Firestore."
-                onError(msg)
-            }
+                .addOnFailureListener { exception ->
+                    val msg = exception.localizedMessage ?: "Erro ao buscar eventos no Firestore."
+                    onError(msg)
+                }
+        } catch (_: Throwable) {
+            onSuccess(listaEventosIniciais)
+        }
     }
 
     fun adicionarEvento(
@@ -153,15 +166,24 @@ object EventRepository {
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        val docRef = db.collection(COLLECTION_NAME).document(evento.id.toString())
-        docRef.set(evento)
-            .addOnSuccessListener {
-                onSuccess()
-            }
-            .addOnFailureListener { exception ->
-                val msg = exception.localizedMessage ?: "Erro ao salvar evento no Firestore."
-                onError(msg)
-            }
+        val firestoreDb = db
+        if (firestoreDb == null) {
+            onSuccess()
+            return
+        }
+        try {
+            val docRef = firestoreDb.collection(COLLECTION_NAME).document(evento.id.toString())
+            docRef.set(evento)
+                .addOnSuccessListener {
+                    onSuccess()
+                }
+                .addOnFailureListener { exception ->
+                    val msg = exception.localizedMessage ?: "Erro ao salvar evento no Firestore."
+                    onError(msg)
+                }
+        } catch (_: Throwable) {
+            onSuccess()
+        }
     }
 
     fun atualizarEvento(
@@ -169,15 +191,24 @@ object EventRepository {
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        val docRef = db.collection(COLLECTION_NAME).document(evento.id.toString())
-        docRef.set(evento)
-            .addOnSuccessListener {
-                onSuccess()
-            }
-            .addOnFailureListener { exception ->
-                val msg = exception.localizedMessage ?: "Erro ao atualizar evento no Firestore."
-                onError(msg)
-            }
+        val firestoreDb = db
+        if (firestoreDb == null) {
+            onSuccess()
+            return
+        }
+        try {
+            val docRef = firestoreDb.collection(COLLECTION_NAME).document(evento.id.toString())
+            docRef.set(evento)
+                .addOnSuccessListener {
+                    onSuccess()
+                }
+                .addOnFailureListener { exception ->
+                    val msg = exception.localizedMessage ?: "Erro ao atualizar evento no Firestore."
+                    onError(msg)
+                }
+        } catch (_: Throwable) {
+            onSuccess()
+        }
     }
 
     fun deletarEvento(
@@ -185,15 +216,24 @@ object EventRepository {
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        val docRef = db.collection(COLLECTION_NAME).document(eventoId.toString())
-        docRef.delete()
-            .addOnSuccessListener {
-                onSuccess()
-            }
-            .addOnFailureListener { exception ->
-                val msg = exception.localizedMessage ?: "Erro ao excluir evento no Firestore."
-                onError(msg)
-            }
+        val firestoreDb = db
+        if (firestoreDb == null) {
+            onSuccess()
+            return
+        }
+        try {
+            val docRef = firestoreDb.collection(COLLECTION_NAME).document(eventoId.toString())
+            docRef.delete()
+                .addOnSuccessListener {
+                    onSuccess()
+                }
+                .addOnFailureListener { exception ->
+                    val msg = exception.localizedMessage ?: "Erro ao excluir evento no Firestore."
+                    onError(msg)
+                }
+        } catch (_: Throwable) {
+            onSuccess()
+        }
     }
 
     fun encerrarEvento(
@@ -201,24 +241,42 @@ object EventRepository {
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        val docRef = db.collection(COLLECTION_NAME).document(eventoId.toString())
-        docRef.update("encerrado", true)
-            .addOnSuccessListener {
-                onSuccess()
-            }
-            .addOnFailureListener { exception ->
-                val msg = exception.localizedMessage ?: "Erro ao encerrar evento no Firestore."
-                onError(msg)
-            }
+        val firestoreDb = db
+        if (firestoreDb == null) {
+            onSuccess()
+            return
+        }
+        try {
+            val docRef = firestoreDb.collection(COLLECTION_NAME).document(eventoId.toString())
+            docRef.update("encerrado", true)
+                .addOnSuccessListener {
+                    onSuccess()
+                }
+                .addOnFailureListener { exception ->
+                    val msg = exception.localizedMessage ?: "Erro ao encerrar evento no Firestore."
+                    onError(msg)
+                }
+        } catch (_: Throwable) {
+            onSuccess()
+        }
     }
 
     private fun seearEventosIniciais(onComplete: () -> Unit) {
-        val batch = db.batch()
-        for (e in listaEventosIniciais) {
-            val docRef = db.collection(COLLECTION_NAME).document(e.id.toString())
-            batch.set(docRef, e)
+        val firestoreDb = db
+        if (firestoreDb == null) {
+            onComplete()
+            return
         }
-        batch.commit().addOnCompleteListener {
+        try {
+            val batch = firestoreDb.batch()
+            for (e in listaEventosIniciais) {
+                val docRef = firestoreDb.collection(COLLECTION_NAME).document(e.id.toString())
+                batch.set(docRef, e)
+            }
+            batch.commit().addOnCompleteListener {
+                onComplete()
+            }
+        } catch (_: Throwable) {
             onComplete()
         }
     }

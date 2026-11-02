@@ -31,13 +31,7 @@ object EventCard {
     ) {
         fun dpToPx(dp: Int): Int = UIComponents.dpToPx(context, dp)
 
-        val card = CardView(context).apply {
-            radius = dpToPx(16).toFloat()
-            cardElevation = dpToPx(4).toFloat()
-            setContentPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16))
-            useCompatPadding = true
-            setCardBackgroundColor(AppColors.COLOR_CARD_BG)
-        }
+        val card = UIComponents.criarCardView(context, 16f, 4f, 16, AppColors.COLOR_CARD_BG)
 
         val layoutInterno = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL

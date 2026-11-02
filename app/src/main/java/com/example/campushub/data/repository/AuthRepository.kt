@@ -6,15 +6,19 @@ import com.google.firebase.auth.UserProfileChangeRequest
 
 object AuthRepository {
 
-    private val auth: FirebaseAuth
-        get() = FirebaseAuth.getInstance()
+    private val auth: FirebaseAuth?
+        get() = try {
+            FirebaseAuth.getInstance()
+        } catch (_: Throwable) {
+            null
+        }
 
     fun getUsuarioAtual(): FirebaseUser? {
-        return auth.currentUser
+        return auth?.currentUser
     }
 
     fun isUsuarioLogado(): Boolean {
-        return auth.currentUser != null
+        return auth?.currentUser != null
     }
 
     fun fazerLogin(
@@ -23,10 +27,15 @@ object AuthRepository {
         onSuccess: (FirebaseUser) -> Unit,
         onError: (String) -> Unit
     ) {
-        auth.signInWithEmailAndPassword(email, senha)
+        val firebaseAuth = auth
+        if (firebaseAuth == null) {
+            onError("Serviço de autenticação do Firebase indisponível.")
+            return
+        }
+        firebaseAuth.signInWithEmailAndPassword(email, senha)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    val user = auth.currentUser
+                    val user = firebaseAuth.currentUser
                     if (user != null) {
                         onSuccess(user)
                     } else {
@@ -46,10 +55,15 @@ object AuthRepository {
         onSuccess: (FirebaseUser) -> Unit,
         onError: (String) -> Unit
     ) {
-        auth.createUserWithEmailAndPassword(email, senha)
+        val firebaseAuth = auth
+        if (firebaseAuth == null) {
+            onError("Serviço de autenticação do Firebase indisponível.")
+            return
+        }
+        firebaseAuth.createUserWithEmailAndPassword(email, senha)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    val user = auth.currentUser
+                    val user = firebaseAuth.currentUser
                     if (user != null) {
                         val profileUpdates = UserProfileChangeRequest.Builder()
                             .setDisplayName(nome)
@@ -72,7 +86,12 @@ object AuthRepository {
         onSuccess: () -> Unit,
         onError: (String) -> Unit
     ) {
-        auth.sendPasswordResetEmail(email)
+        val firebaseAuth = auth
+        if (firebaseAuth == null) {
+            onError("Serviço de autenticação do Firebase indisponível.")
+            return
+        }
+        firebaseAuth.sendPasswordResetEmail(email)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     onSuccess()
@@ -84,6 +103,8 @@ object AuthRepository {
     }
 
     fun deslogar() {
-        auth.signOut()
+        try {
+            auth?.signOut()
+        } catch (_: Throwable) {}
     }
 }

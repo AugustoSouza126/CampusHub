@@ -159,12 +159,14 @@ object HomeScreen {
         }
 
         opcoesSituacao.forEach { opcao ->
-            val btn = MaterialButton(context).apply {
+            val btn = UIComponents.criarButtonInstance(context).apply {
                 text = opcao
                 textSize = 13f
                 typeface = Typeface.DEFAULT_BOLD
                 isAllCaps = false
-                cornerRadius = dpToPx(10)
+                if (this is MaterialButton) {
+                    cornerRadius = dpToPx(10)
+                }
                 backgroundTintList = null
                 setOnClickListener {
                     situacaoSelecionada = opcao
@@ -215,12 +217,14 @@ object HomeScreen {
         }
 
         categoriasOpcoes.forEach { cat ->
-            val btnCat = MaterialButton(context).apply {
+            val btnCat = UIComponents.criarButtonInstance(context).apply {
                 text = cat
                 textSize = 12f
                 typeface = Typeface.DEFAULT_BOLD
                 isAllCaps = false
-                cornerRadius = dpToPx(20)
+                if (this is MaterialButton) {
+                    cornerRadius = dpToPx(20)
+                }
                 backgroundTintList = null
                 setOnClickListener {
                     categoriaSelecionada = cat

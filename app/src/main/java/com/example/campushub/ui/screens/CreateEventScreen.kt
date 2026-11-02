@@ -86,12 +86,14 @@ object CreateEventScreen {
         }
 
         categoriasOpcoes.forEach { cat ->
-            val btnCat = MaterialButton(context).apply {
+            val btnCat = UIComponents.criarButtonInstance(context).apply {
                 text = cat
                 textSize = 12f
                 typeface = Typeface.DEFAULT_BOLD
                 isAllCaps = false
-                cornerRadius = UIComponents.dpToPx(context, 20)
+                if (this is MaterialButton) {
+                    cornerRadius = UIComponents.dpToPx(context, 20)
+                }
                 backgroundTintList = null
                 setOnClickListener {
                     categoriaSelecionada = cat

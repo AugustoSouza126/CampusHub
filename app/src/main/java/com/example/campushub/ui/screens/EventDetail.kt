@@ -57,18 +57,7 @@ object EventDetail {
         layout.addView(UIComponents.criarHeaderBar(context, evento.titulo, "Categoria: ${evento.categoria}", onVoltar = onVoltar))
 
         // 1. CARD DE INFORMAÇÕES BÁSICAS DO EVENTO
-        val cardInfo = CardView(context).apply {
-            radius = UIComponents.dpToPx(context, 16).toFloat()
-            cardElevation = UIComponents.dpToPx(context, 4).toFloat()
-            setContentPadding(
-                UIComponents.dpToPx(context, 20),
-                UIComponents.dpToPx(context, 20),
-                UIComponents.dpToPx(context, 20),
-                UIComponents.dpToPx(context, 20)
-            )
-            useCompatPadding = true
-            setCardBackgroundColor(AppColors.COLOR_CARD_BG)
-        }
+        val cardInfo = UIComponents.criarCardView(context, 16f, 4f, 20, AppColors.COLOR_CARD_BG)
 
         val innerInfo = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -112,18 +101,7 @@ object EventDetail {
         layout.addView(cardInfo)
 
         // 2. CARD DO MAPA (MAPLIBRE SDK)
-        val cardMapa = CardView(context).apply {
-            radius = UIComponents.dpToPx(context, 16).toFloat()
-            cardElevation = UIComponents.dpToPx(context, 4).toFloat()
-            setContentPadding(
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16)
-            )
-            useCompatPadding = true
-            setCardBackgroundColor(AppColors.COLOR_CARD_BG)
-        }
+        val cardMapa = UIComponents.criarCardView(context, 16f, 4f, 16, AppColors.COLOR_CARD_BG)
 
         val layoutMapa = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -190,18 +168,7 @@ object EventDetail {
         // PAINEL DO CRIADOR DO EVENTO (Opções de Editar, Encerrar e Excluir)
         val ehCriador = evento.criadorEmail.equals(userRepo.getUsuarioEmail(), ignoreCase = true) && userRepo.getUsuarioEmail().isNotEmpty()
         if (ehCriador) {
-            val cardCriador = CardView(context).apply {
-                radius = UIComponents.dpToPx(context, 16).toFloat()
-                cardElevation = UIComponents.dpToPx(context, 4).toFloat()
-                setContentPadding(
-                    UIComponents.dpToPx(context, 16),
-                    UIComponents.dpToPx(context, 16),
-                    UIComponents.dpToPx(context, 16),
-                    UIComponents.dpToPx(context, 16)
-                )
-                useCompatPadding = true
-                setCardBackgroundColor(Color.parseColor("#FEF3C7"))
-            }
+            val cardCriador = UIComponents.criarCardView(context, 16f, 4f, 16, Color.parseColor("#FEF3C7"))
 
             val layoutCriador = LinearLayout(context).apply {
                 orientation = LinearLayout.VERTICAL
@@ -382,18 +349,7 @@ object EventDetail {
         inscrito: Boolean,
         onAtualizarTela: () -> Unit
     ) {
-        val cardAvaliacao = CardView(context).apply {
-            radius = UIComponents.dpToPx(context, 16).toFloat()
-            cardElevation = UIComponents.dpToPx(context, 4).toFloat()
-            setContentPadding(
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16)
-            )
-            useCompatPadding = true
-            setCardBackgroundColor(AppColors.COLOR_CARD_BG)
-        }
+        val cardAvaliacao = UIComponents.criarCardView(context, 16f, 4f, 16, AppColors.COLOR_CARD_BG)
 
         val layoutAvaliacao = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -456,12 +412,16 @@ object EventDetail {
 
             for (i in 1..5) {
                 val ehNotaSelecionada = (notaAtual == i)
-                val btnEstrela = MaterialButton(context).apply {
+                val btnEstrela = UIComponents.criarButtonInstance(context).apply {
                     text = "⭐ $i"
                     textSize = 13f
                     typeface = Typeface.DEFAULT_BOLD
                     isAllCaps = false
-                    cornerRadius = UIComponents.dpToPx(context, 10)
+                    if (this is MaterialButton) {
+                        cornerRadius = UIComponents.dpToPx(context, 10)
+                        strokeColor = android.content.res.ColorStateList.valueOf(Color.parseColor("#FCD34D"))
+                        strokeWidth = UIComponents.dpToPx(context, 1)
+                    }
                     backgroundTintList = null
 
                     if (ehNotaSelecionada) {
@@ -470,8 +430,10 @@ object EventDetail {
                     } else {
                         setBackgroundColor(Color.WHITE)
                         setTextColor(Color.parseColor("#D97706"))
-                        strokeColor = android.content.res.ColorStateList.valueOf(Color.parseColor("#FCD34D"))
-                        strokeWidth = UIComponents.dpToPx(context, 1)
+                        if (this is MaterialButton) {
+                            strokeColor = android.content.res.ColorStateList.valueOf(Color.parseColor("#FCD34D"))
+                            strokeWidth = UIComponents.dpToPx(context, 1)
+                        }
                     }
 
                     setOnClickListener {
@@ -513,18 +475,7 @@ object EventDetail {
         userRepo: UserPreferencesRepository,
         onAtualizarTela: () -> Unit
     ) {
-        val cardComentarios = CardView(context).apply {
-            radius = UIComponents.dpToPx(context, 16).toFloat()
-            cardElevation = UIComponents.dpToPx(context, 4).toFloat()
-            setContentPadding(
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16),
-                UIComponents.dpToPx(context, 16)
-            )
-            useCompatPadding = true
-            setCardBackgroundColor(AppColors.COLOR_CARD_BG)
-        }
+        val cardComentarios = UIComponents.criarCardView(context, 16f, 4f, 16, AppColors.COLOR_CARD_BG)
 
         val layoutComentarios = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -590,18 +541,7 @@ object EventDetail {
             val usuarioEmailAtual = userRepo.getUsuarioEmail()
 
             comentariosLista.forEach { com ->
-                val cardItem = CardView(context).apply {
-                    radius = UIComponents.dpToPx(context, 12).toFloat()
-                    cardElevation = UIComponents.dpToPx(context, 1).toFloat()
-                    setContentPadding(
-                        UIComponents.dpToPx(context, 12),
-                        UIComponents.dpToPx(context, 12),
-                        UIComponents.dpToPx(context, 12),
-                        UIComponents.dpToPx(context, 12)
-                    )
-                    useCompatPadding = true
-                    setCardBackgroundColor(Color.parseColor("#F8FAFC"))
-                }
+                val cardItem = UIComponents.criarCardView(context, 12f, 1f, 12, Color.parseColor("#F8FAFC"))
 
                 val itemLayout = LinearLayout(context).apply {
                     orientation = LinearLayout.VERTICAL
