@@ -175,7 +175,7 @@ object MyCreatedEventsScreen {
             weightSum = 4f
         }
 
-        val btnVer = UIComponents.criarBotao(context, "👁️", primario = true) {
+        val btnVer = UIComponents.criarBotao(context, "Ver", primario = true) {
             onVerDetalhes(evento)
         }.apply {
             layoutParams = LinearLayout.LayoutParams(0, UIComponents.dpToPx(context, 42), 1f).apply {
@@ -184,7 +184,7 @@ object MyCreatedEventsScreen {
         }
         rowBotoes.addView(btnVer)
 
-        val btnEditar = UIComponents.criarBotao(context, "✏️", primario = false) {
+        val btnEditar = UIComponents.criarBotao(context, "Editar", primario = false) {
             onEditarEvento(evento)
         }.apply {
             layoutParams = LinearLayout.LayoutParams(0, UIComponents.dpToPx(context, 42), 1f).apply {
@@ -213,7 +213,7 @@ object MyCreatedEventsScreen {
             rowBotoes.addView(btnEncerrar)
         }
 
-        val btnExcluir = UIComponents.criarBotao(context, "🗑️", primario = false, perigo = true) {
+        val btnExcluir = UIComponents.criarBotao(context, "Excluir", primario = false, perigo = true) {
             EventRepository.deletarEvento(
                 evento.id,
                 onSuccess = {

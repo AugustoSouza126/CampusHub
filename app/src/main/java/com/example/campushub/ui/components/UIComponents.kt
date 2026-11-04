@@ -154,7 +154,7 @@ object UIComponents {
         return criarButtonInstance(context).apply {
             this.text = texto
             setOnClickListener { acao() }
-            textSize = 14f
+            textSize = 13f
             typeface = Typeface.DEFAULT_BOLD
             isAllCaps = false
             backgroundTintList = null
