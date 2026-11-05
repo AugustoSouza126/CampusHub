@@ -45,6 +45,8 @@ dependencies {
     testImplementation("androidx.test:core-ktx:1.6.1")
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
     implementation("androidx.cardview:cardview:1.0.0")
 
     // Firebase
