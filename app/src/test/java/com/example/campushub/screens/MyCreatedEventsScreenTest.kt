@@ -14,10 +14,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Testes unitários para [MyCreatedEventsScreen].
- * Valida a tela de gestão de eventos criados pelo usuário logado.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class MyCreatedEventsScreenTest {
@@ -33,9 +29,6 @@ class MyCreatedEventsScreenTest {
         userRepository = UserPreferencesRepository(ApplicationProvider.getApplicationContext())
     }
 
-    /**
-     * Testa a construção da tela de eventos criados pelo usuário.
-     */
     @Test
     fun testBuildUserCreatedEventsScreen() {
         val parentLayout = LinearLayout(context)

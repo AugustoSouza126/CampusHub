@@ -12,9 +12,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * Testes unitários para verificação dos modelos de dados (Data Classes) da aplicação.
- */
 class EventModelTest {
 
     @Test

@@ -12,16 +12,8 @@ import com.example.campushub.ui.components.EventCard
 import com.example.campushub.ui.components.UIComponents
 import com.example.campushub.ui.theme.AppColors
 
-/**
- * Responsável por construir a Tela de Minhas Inscrições do CampusHub.
- * Filtra e exibe os eventos em que o usuário confirmou presença/inscricão.
- */
 object SubscriptionsScreen {
 
-    /**
-     * Constrói a interface visual da Tela de Inscrições.
-     * Busca as inscrições armazenadas no repositório do usuário e lista os eventos correspondentes.
-     */
     fun construirTelaMeusEventos(
         context: Context,
         layout: LinearLayout,

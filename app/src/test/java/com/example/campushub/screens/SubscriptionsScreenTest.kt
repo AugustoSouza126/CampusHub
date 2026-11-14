@@ -14,10 +14,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Testes unitários para [SubscriptionsScreen].
- * Valida a tela de acompanhamento das inscrições do aluno.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class SubscriptionsScreenTest {
@@ -33,9 +29,6 @@ class SubscriptionsScreenTest {
         userRepository = UserPreferencesRepository(ApplicationProvider.getApplicationContext())
     }
 
-    /**
-     * Testa a construção da tela de eventos inscritos do usuário.
-     */
     @Test
     fun testBuildSubscribedEventsScreen() {
         val parentLayout = LinearLayout(context)

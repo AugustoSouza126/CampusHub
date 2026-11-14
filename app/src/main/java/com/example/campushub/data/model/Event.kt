@@ -1,8 +1,5 @@
 package com.example.campushub.data.model
 
-/**
- * Data model representing an Academic Event in CampusHub.
- */
 data class Event(
     val id: Int = 0,
     val titulo: String = "",

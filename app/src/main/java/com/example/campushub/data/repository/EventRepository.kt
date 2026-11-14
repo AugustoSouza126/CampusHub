@@ -4,9 +4,6 @@ import com.example.campushub.data.model.Event
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
 
-/**
- * Repositório responsável por gerenciar operações CRUD de Eventos no Firebase Firestore.
- */
 object EventRepository {
 
     private val db: FirebaseFirestore?
@@ -18,9 +15,6 @@ object EventRepository {
 
     private const val COLLECTION_NAME = "eventos"
 
-    /**
-     * Lista inicial de eventos pré-cadastrados no campus com dados de localização (Endereço, Latitude e Longitude).
-     */
     val listaEventosIniciais = listOf(
         Event(
             id = 0,

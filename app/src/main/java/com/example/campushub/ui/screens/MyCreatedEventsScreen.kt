@@ -14,16 +14,8 @@ import com.example.campushub.ui.components.UIComponents
 import com.example.campushub.ui.theme.AppColors
 import java.util.Locale
 
-/**
- * Responsável por construir a Tela de Eventos Criados pelo Usuário.
- * Filtra no Firebase e exibe os eventos publicados com o e-mail do usuário logado,
- * permitindo editar, encerrar ou excluir cada um deles.
- */
 object MyCreatedEventsScreen {
 
-    /**
-     * Constrói e exibe a lista de eventos criados pelo usuário atual.
-     */
     fun construirTelaEventosCriados(
         context: Context,
         layout: LinearLayout,
@@ -40,7 +32,6 @@ object MyCreatedEventsScreen {
         }
         layout.addView(containerLista)
 
-        // Carrega a lista de eventos filtrados por e-mail do criador
         fun carregarLista() {
             containerLista.removeAllViews()
 
@@ -97,10 +88,6 @@ object MyCreatedEventsScreen {
         carregarLista()
     }
 
-    /**
-     * Constrói o Card específico com botões de gerenciamento (Editar, Encerrar, Excluir)
-     * para eventos publicados pelo usuário logado.
-     */
     private fun adicionarCardCriador(
         context: Context,
         parent: LinearLayout,
@@ -116,7 +103,6 @@ object MyCreatedEventsScreen {
             orientation = LinearLayout.VERTICAL
         }
 
-        // Cabeçalho
         val rowTop = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -150,7 +136,6 @@ object MyCreatedEventsScreen {
 
         layoutInterno.addView(rowTop)
 
-        // Título
         val tvTitulo = TextView(context).apply {
             text = evento.titulo
             textSize = 18f
@@ -160,7 +145,6 @@ object MyCreatedEventsScreen {
         }
         layoutInterno.addView(tvTitulo)
 
-        // Local e Horário
         val tvInfo = TextView(context).apply {
             text = "🕒 ${evento.horario}  •  📍 ${evento.local}"
             textSize = 13f
@@ -169,7 +153,6 @@ object MyCreatedEventsScreen {
         }
         layoutInterno.addView(tvInfo)
 
-        // Botoes de Ação Rápida (Ver, Editar, Encerrar, Excluir)
         val rowBotoes = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             weightSum = 4f

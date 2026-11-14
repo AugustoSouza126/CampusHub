@@ -15,10 +15,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Testes unitários para [EventMediaComponent].
- * Valida as seções de publicação e exibição de fotos, vídeos e áudios do evento.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class EventMediaComponentTest {
@@ -34,9 +30,6 @@ class EventMediaComponentTest {
         userRepository = UserPreferencesRepository(ApplicationProvider.getApplicationContext())
     }
 
-    /**
-     * Testa a geração da seção de fotos para usuário não inscrito (bloqueio de envio).
-     */
     @Test
     fun testBuildPhotosSectionNonSubscribedUser() {
         val parentLayout = LinearLayout(context)
@@ -56,9 +49,6 @@ class EventMediaComponentTest {
         assertNotNull(parentLayout.getChildAt(0))
     }
 
-    /**
-     * Testa a geração da seção de fotos para usuário inscrito com foto cadastrada.
-     */
     @Test
     fun testBuildPhotosSectionSubscribedUser() {
         val parentLayout = LinearLayout(context)
@@ -81,9 +71,6 @@ class EventMediaComponentTest {
         assertEquals(1, parentLayout.childCount)
     }
 
-    /**
-     * Testa a construção da seção de vídeos para usuário não inscrito e posteriormente inscrito.
-     */
     @Test
     fun testBuildVideosSectionForSubscribedAndNonSubscribed() {
         val parentLayout = LinearLayout(context)
@@ -116,9 +103,6 @@ class EventMediaComponentTest {
         assertEquals(2, parentLayout.childCount)
     }
 
-    /**
-     * Testa a construção da seção de gravação/reprodução de áudio.
-     */
     @Test
     fun testBuildAudiosSection() {
         val parentLayout = LinearLayout(context)

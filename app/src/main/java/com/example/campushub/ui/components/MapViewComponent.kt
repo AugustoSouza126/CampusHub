@@ -15,21 +15,10 @@ import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 
-/**
- * Componente reutilizável para exibição de mapas interativos utilizando o MapLibre SDK.
- * Evita duplicação de código de inicialização, controle de ciclo de vida e configuração de estilo.
- */
 object MapViewComponent {
 
-    /**
-     * URL do estilo de mapa vetorial (padrão demo MapLibre open-source).
-     */
     private const val MAP_STYLE_URL = "https://demotiles.maplibre.org/style.json"
 
-    /**
-     * Cria uma [View] contendo o mapa do MapLibre centralizado nas coordenadas informadas ([latitude], [longitude])
-     * e adiciona um marcador com [titulo] e [subtitulo] do evento.
-     */
     fun criarMapaLocalizacao(
         context: Context,
         latitude: Double,

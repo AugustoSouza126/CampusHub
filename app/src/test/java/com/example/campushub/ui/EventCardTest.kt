@@ -17,10 +17,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Testes unitários para a construção do Card de Eventos [EventCard].
- * Testa a geração visual de cards para eventos abertos e encerrados.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class EventCardTest {
@@ -36,9 +32,6 @@ class EventCardTest {
         userRepository = UserPreferencesRepository(ApplicationProvider.getApplicationContext())
     }
 
-    /**
-     * Testa a inclusão de um card de evento normal em um layout pai.
-     */
     @Test
     fun testAddUpcomingEventCard() {
         val parentLayout = LinearLayout(context)
@@ -69,9 +62,6 @@ class EventCardTest {
         assertFalse(isDetailsClicked)
     }
 
-    /**
-     * Testa a geração de card para evento encerrado onde o usuário possui inscrição ativa e avaliação.
-     */
     @Test
     fun testAddEndedAndSubscribedEventCard() {
         val parentLayout = LinearLayout(context)

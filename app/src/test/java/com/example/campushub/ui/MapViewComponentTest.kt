@@ -10,10 +10,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Testes unitários para [MapViewComponent].
- * Valida a instanciação do container visual do mapa interativo.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class MapViewComponentTest {
@@ -27,9 +23,6 @@ class MapViewComponentTest {
         context = activity
     }
 
-    /**
-     * Testa a criação do container de mapa com coordenadas geográficas especificadas.
-     */
     @Test
     fun testCreateLocationMapViewContainer() {
         val mapViewContainer = MapViewComponent.criarMapaLocalizacao(

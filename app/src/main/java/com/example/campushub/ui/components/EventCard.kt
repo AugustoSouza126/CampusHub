@@ -14,14 +14,8 @@ import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.theme.AppColors
 import java.util.Locale
 
-/**
- * Componente responsável por construir o Card de Evento reutilizável nas telas
- */
 object EventCard {
 
-    /**
-     * Constrói e adiciona um [CardView] representando um evento no layout pai fornecido.
-     */
     fun adicionarCardEvento(
         context: Context,
         parent: LinearLayout,
@@ -37,7 +31,6 @@ object EventCard {
             orientation = LinearLayout.VERTICAL
         }
 
-        // Cabeçalho do Card (Categoria + Badge Data + Heart Favorito)
         val rowTop = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -89,7 +82,6 @@ object EventCard {
 
         layoutInterno.addView(rowTop)
 
-        // Título do Evento
         val tvTitulo = TextView(context).apply {
             text = evento.titulo
             textSize = 18f
@@ -99,7 +91,6 @@ object EventCard {
         }
         layoutInterno.addView(tvTitulo)
 
-        // Badges do evento (Encerrado, Inscrito e Nota/Rating)
         val rowBadges = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -162,7 +153,6 @@ object EventCard {
 
         layoutInterno.addView(rowBadges)
 
-        // Local, Horário e Endereço
         val tvInfo = TextView(context).apply {
             val localTexto = if (evento.endereco.isNotEmpty()) {
                 "🕒 ${evento.horario}  •  📍 ${evento.local}\n🏠 ${evento.endereco}"
@@ -176,7 +166,6 @@ object EventCard {
         }
         layoutInterno.addView(tvInfo)
 
-        // Descrição resumida
         val tvDesc = TextView(context).apply {
             text = evento.descricao
             textSize = 14f
@@ -185,7 +174,6 @@ object EventCard {
         }
         layoutInterno.addView(tvDesc)
 
-        // Botão Ver Detalhes
         val btnDetalhes = UIComponents.criarBotao(context, "VER DETALHES", primario = true) {
             onVerDetalhes(evento)
         }

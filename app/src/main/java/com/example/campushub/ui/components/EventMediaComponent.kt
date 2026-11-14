@@ -17,15 +17,7 @@ import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.theme.AppColors
 import java.io.File
 
-/**
- * Componentes de UI reutilizáveis para exibir e gerenciar as Seções de Fotos, Áudios e Vídeos do Evento.
- * Restringe publicação exclusivamente a alunos inscritos no evento e gerencia o salvamento local.
- */
 object EventMediaComponent {
-
-    // =========================================================
-    // SEÇÃO DE FOTOS DO EVENTO
-    // =========================================================
 
     fun construirSecaoFotos(
         context: Context,
@@ -61,7 +53,6 @@ object EventMediaComponent {
         }
         layoutFotos.addView(tvSub)
 
-        // Restrição: Apenas alunos inscritos podem publicar fotos
         if (inscrito) {
             val rowBotoesFoto = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -98,7 +89,6 @@ object EventMediaComponent {
             layoutFotos.addView(tvInfoNaoInscrito)
         }
 
-        // Lista / Carrossel de Fotos Publicadas
         val fotosLista = userRepo.getFotosDoEvento(evento.id)
 
         if (fotosLista.isEmpty()) {
@@ -162,7 +152,6 @@ object EventMediaComponent {
                             setImageBitmap(bitmap)
                         } catch (_: Exception) {}
 
-                        // Clique na imagem abre modal expandido
                         setOnClickListener {
                             abrirFotoExpandida(context, foto)
                         }
@@ -225,9 +214,6 @@ object EventMediaComponent {
         layout.addView(cardFotos, paramsCardFotos)
     }
 
-    /**
-     * Exibe a foto em tela cheia/expandida em um diálogo sobreposto.
-     */
     private fun abrirFotoExpandida(context: Context, foto: EventPhoto) {
         val file = File(foto.caminhoArquivo)
         if (!file.exists()) return
@@ -277,10 +263,6 @@ object EventMediaComponent {
         dialog.show()
     }
 
-    // =========================================================
-    // SEÇÃO DE VÍDEOS DO EVENTO
-    // =========================================================
-
     fun construirSecaoVideos(
         context: Context,
         layout: LinearLayout,
@@ -315,7 +297,6 @@ object EventMediaComponent {
         }
         layoutVideos.addView(tvSub)
 
-        // Restrição: Apenas alunos inscritos podem enviar/gravar vídeos
         if (inscrito) {
             val rowBotoesVideo = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
@@ -352,7 +333,6 @@ object EventMediaComponent {
             layoutVideos.addView(tvInfoNaoInscrito)
         }
 
-        // Lista de Vídeos Publicados
         val videosLista = userRepo.getVideosDoEvento(evento.id)
 
         if (videosLista.isEmpty()) {
@@ -471,10 +451,6 @@ object EventMediaComponent {
         layout.addView(cardVideos, paramsCardVideos)
     }
 
-    // =========================================================
-    // SEÇÃO DE ÁUDIOS DO EVENTO
-    // =========================================================
-
     fun construirSecaoAudios(
         context: Context,
         layout: LinearLayout,
@@ -508,7 +484,6 @@ object EventMediaComponent {
         }
         layoutAudios.addView(tvSub)
 
-        // Restrição: Apenas alunos inscritos podem gravar áudio
         if (inscrito) {
             val temPermissaoAudio = ContextCompat.checkSelfPermission(
                 context,
@@ -563,7 +538,6 @@ object EventMediaComponent {
             layoutAudios.addView(tvInfoNaoInscrito)
         }
 
-        // Lista de Áudios Publicados
         val audiosLista = userRepo.getAudiosDoEvento(evento.id)
 
         if (audiosLista.isEmpty()) {
@@ -623,7 +597,6 @@ object EventMediaComponent {
 
                 itemLayout.addView(rowHeader)
 
-                // Botão de Play/Stop Audio
                 var tocando = false
                 val btnPlay = UIComponents.criarBotao(context, "▶️ OUVIR ÁUDIO", primario = false) {
                     if (tocando) {

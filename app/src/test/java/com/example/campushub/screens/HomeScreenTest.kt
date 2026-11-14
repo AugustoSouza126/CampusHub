@@ -14,10 +14,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Testes unitários para [HomeScreen].
- * Valida a montagem da tela inicial com barra de busca e pílulas de filtros.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class HomeScreenTest {
@@ -33,9 +29,6 @@ class HomeScreenTest {
         userRepository = UserPreferencesRepository(ApplicationProvider.getApplicationContext())
     }
 
-    /**
-     * Testa a construção da tela inicial principal (Home).
-     */
     @Test
     fun testBuildHomeScreenLayout() {
         val parentLayout = LinearLayout(context)

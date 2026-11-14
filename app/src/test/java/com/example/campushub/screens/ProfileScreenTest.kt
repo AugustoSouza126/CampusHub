@@ -14,10 +14,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Testes unitários para [ProfileScreen].
- * Valida a exibição dos dados de perfil acadêmico e formulário de edição.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class ProfileScreenTest {
@@ -33,9 +29,6 @@ class ProfileScreenTest {
         userRepository = UserPreferencesRepository(ApplicationProvider.getApplicationContext())
     }
 
-    /**
-     * Testa a construção da tela de visualização do perfil acadêmico do usuário.
-     */
     @Test
     fun testBuildUserProfileScreen() {
         val parentLayout = LinearLayout(context)
@@ -54,9 +47,6 @@ class ProfileScreenTest {
         assertTrue(parentLayout.childCount > 0)
     }
 
-    /**
-     * Testa a construção do formulário de edição de informações de perfil.
-     */
     @Test
     fun testBuildEditProfileScreen() {
         val parentLayout = LinearLayout(context)

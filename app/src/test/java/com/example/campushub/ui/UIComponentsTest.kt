@@ -14,10 +14,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Testes unitários para utilitários de interface [UIComponents].
- * Valida a criação genérica de componentes visuais reutilizáveis.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class UIComponentsTest {
@@ -26,33 +22,23 @@ class UIComponentsTest {
 
     @Before
     fun setUp() {
-        // Inicializa uma Activity dummy para fornecer o contexto do Android com tema aplicado
         val activity = Robolectric.buildActivity(android.app.Activity::class.java).get()
         activity.setTheme(com.example.campushub.R.style.Theme_CampusHub)
         context = activity
     }
 
-    /**
-     * Testa a conversão de Densidade de Pixels (dp) para Pixels (px).
-     */
     @Test
     fun testDpToPxConversion() {
         val convertedPx = UIComponents.dpToPx(context, 16)
         assertTrue(convertedPx >= 16)
     }
 
-    /**
-     * Testa a criação de desenháveis de fundo retangulares com borda e raio nos cantos.
-     */
     @Test
     fun testCreateShape() {
         val createdShape = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 12f)
         assertNotNull(createdShape)
     }
 
-    /**
-     * Testa a criação de rótulos de texto (TextView) estilizados.
-     */
     @Test
     fun testCreateLabel() {
         val labelView = UIComponents.criarRotulo(context, "E-mail Institucional")
@@ -60,9 +46,6 @@ class UIComponentsTest {
         assertEquals("E-mail Institucional", labelView.text.toString())
     }
 
-    /**
-     * Testa a criação de campos de texto (EditText) com valores e dicas personalizadas.
-     */
     @Test
     fun testCreateInputField() {
         val inputEditText = UIComponents.criarCampoTexto(context, "Digite seu nome", valorInicial = "João")
@@ -71,9 +54,6 @@ class UIComponentsTest {
         assertEquals("Digite seu nome", inputEditText.hint.toString())
     }
 
-    /**
-     * Testa a criação de um botão primário e o acionamento de seu callback ao ser clicado.
-     */
     @Test
     fun testCreatePrimaryButton() {
         var isButtonClicked = false
@@ -87,9 +67,6 @@ class UIComponentsTest {
         assertTrue(isButtonClicked)
     }
 
-    /**
-     * Testa a criação de um botão com estilo de ação destrutiva/perigo.
-     */
     @Test
     fun testCreateDangerButton() {
         var isButtonClicked = false
@@ -103,9 +80,6 @@ class UIComponentsTest {
         assertTrue(isButtonClicked)
     }
 
-    /**
-     * Testa a criação do cabeçalho superior com e sem botão de navegação de retorno.
-     */
     @Test
     fun testCreateHeaderBarWithAndWithoutBackButton() {
         var isBackButtonClicked = false
@@ -119,9 +93,6 @@ class UIComponentsTest {
         assertEquals(false, isBackButtonClicked)
     }
 
-    /**
-     * Testa a construção da barra de navegação inferior (Bottom Navigation).
-     */
     @Test
     fun testCreateBottomNavigation() {
         var selectedTab = ""
@@ -132,9 +103,6 @@ class UIComponentsTest {
         assertEquals("", selectedTab)
     }
 
-    /**
-     * Testa a montagem do layout base contendo ScrollView, container do corpo e barra de navegação.
-     */
     @Test
     fun testCreateBaseScreenLayout() {
         var navigatedTab = ""

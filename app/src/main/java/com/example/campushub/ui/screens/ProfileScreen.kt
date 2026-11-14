@@ -12,14 +12,8 @@ import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.components.UIComponents
 import com.example.campushub.ui.theme.AppColors
 
-/**
- * Responsável por construir as telas do Perfil do Usuário e Edição de Dados Acadêmicos.
- */
 object ProfileScreen {
 
-    /**
-     * Constrói a tela de Perfil do Usuário, exibindo os dados salvos
-     */
     fun construirTelaPerfil(
         context: Context,
         layout: LinearLayout,
@@ -86,10 +80,6 @@ object ProfileScreen {
         })
     }
 
-    /**
-     * Constrói a tela de Edição de Perfil, permitindo alterar Nome, Matrícula e E-mail,
-     * persistindo as alterações no [UserPreferencesRepository].
-     */
     fun construirTelaEditarPerfil(
         context: Context,
         layout: LinearLayout,

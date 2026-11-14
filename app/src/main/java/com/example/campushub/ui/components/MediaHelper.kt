@@ -17,24 +17,12 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.UUID
 
-/**
- * Utilitário responsável por lidar com gravação/reprodução de áudio, salvamento de vídeos e
- * persistência de fotos salvas localmente no armazenamento do dispositivo.
- */
 object MediaHelper {
 
     private var mediaRecorder: MediaRecorder? = null
     private var mediaPlayer: MediaPlayer? = null
     private var audioEmAndamentoPath: String? = null
 
-    // =========================================================
-    // FOTOS (SALVAMENTO LOCAL DE IMAGENS)
-    // =========================================================
-
-    /**
-     * Copia uma foto selecionada da galeria (via [Uri]) para o diretório
-     * de arquivos internos da aplicação e retorna o caminho absoluto do arquivo.
-     */
     fun salvarFotoGaleriaLocalmente(context: Context, imageUri: Uri): String? {
         return try {
             val pastaFotos = File(context.filesDir, "event_photos").apply {
@@ -61,9 +49,6 @@ object MediaHelper {
         }
     }
 
-    /**
-     * Prepara e retorna um novo arquivo [File] para armazenar a foto capturada pela câmera.
-     */
     fun criarArquivoFotoCamera(context: Context): File {
         val pastaFotos = File(context.filesDir, "event_photos").apply {
             if (!exists()) mkdirs()
@@ -71,13 +56,6 @@ object MediaHelper {
         return File(pastaFotos, "camera_${UUID.randomUUID()}.jpg")
     }
 
-    // =========================================================
-    // ÁUDIOS (GRAVAÇÃO E REPRODUÇÃO LOCAL)
-    // =========================================================
-
-    /**
-     * Inicia a gravação de áudio do microfone salvando no arquivo especificado.
-     */
     fun iniciarGravacaoAudio(context: Context): String? {
         return try {
             pararGravacaoAudio()
@@ -105,10 +83,6 @@ object MediaHelper {
         }
     }
 
-    /**
-     * Parar e finalizar a gravação de áudio em andamento.
-     * Retorna o caminho do arquivo gravado ou null em caso de falha.
-     */
     fun pararGravacaoAudio(): String? {
         return try {
             val caminho = audioEmAndamentoPath
@@ -129,9 +103,6 @@ object MediaHelper {
 
     fun isGravando(): Boolean = mediaRecorder != null
 
-    /**
-     * Reproduz o arquivo de áudio no caminho fornecido.
-     */
     fun reproduzirAudio(caminhoArquivo: String, onConcluido: () -> Unit = {}) {
         try {
             pararAudio()
@@ -153,9 +124,6 @@ object MediaHelper {
         }
     }
 
-    /**
-     * Para a reprodução de áudio atual.
-     */
     fun pararAudio() {
         try {
             mediaPlayer?.apply {
@@ -176,14 +144,6 @@ object MediaHelper {
         }
     }
 
-    // =========================================================
-    // VÍDEOS (GRAVAÇÃO, GALERIA E REPRODUÇÃO LOCAL)
-    // =========================================================
-
-    /**
-     * Copia um vídeo selecionado da galeria (via [Uri]) para o diretório
-     * de arquivos internos da aplicação e retorna o caminho absoluto do arquivo.
-     */
     fun salvarVideoGaleriaLocalmente(context: Context, videoUri: Uri): String? {
         return try {
             val pastaVideos = File(context.filesDir, "event_videos").apply {
@@ -210,9 +170,6 @@ object MediaHelper {
         }
     }
 
-    /**
-     * Prepara e retorna um novo arquivo [File] para armazenar o vídeo capturado pela câmera.
-     */
     fun criarArquivoVideoCamera(context: Context): File {
         val pastaVideos = File(context.filesDir, "event_videos").apply {
             if (!exists()) mkdirs()
@@ -220,9 +177,6 @@ object MediaHelper {
         return File(pastaVideos, "camera_${UUID.randomUUID()}.mp4")
     }
 
-    /**
-     * Abre um diálogo interativo com [VideoView] e controles de reprodução para assistir ao vídeo do evento.
-     */
     fun abrirPlayerVideoDialog(context: Context, caminhoArquivo: String, titulo: String = "Vídeo do Evento") {
         val file = File(caminhoArquivo)
         if (!file.exists()) return

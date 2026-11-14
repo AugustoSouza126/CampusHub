@@ -14,10 +14,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Testes unitários para [LoginScreen].
- * Valida a construção das telas de Login, Cadastro e Recuperação de Senha.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class LoginScreenTest {
@@ -33,9 +29,6 @@ class LoginScreenTest {
         userRepository = UserPreferencesRepository(ApplicationProvider.getApplicationContext())
     }
 
-    /**
-     * Testa a construção visual da tela de login e vinculação de botões de atalho.
-     */
     @Test
     fun testBuildLoginScreen() {
         val parentLayout = LinearLayout(context)
@@ -58,9 +51,6 @@ class LoginScreenTest {
         assertEquals(false, isNavigateToPasswordRecovery)
     }
 
-    /**
-     * Testa a construção do formulário de cadastro de novo usuário.
-     */
     @Test
     fun testBuildSignUpScreen() {
         val parentLayout = LinearLayout(context)
@@ -80,9 +70,6 @@ class LoginScreenTest {
         assertEquals(false, isBackClicked)
     }
 
-    /**
-     * Testa a construção da tela de recuperação de senha por e-mail.
-     */
     @Test
     fun testBuildPasswordRecoveryScreen() {
         val parentLayout = LinearLayout(context)

@@ -6,15 +6,8 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * Testes unitários para o repositório [EventRepository].
- * Gerencia a lista padrão de eventos e integração Firestore.
- */
 class EventRepositoryTest {
 
-    /**
-     * Verifica se a lista inicial de eventos pré-cadastrados não está vazia e possui a quantidade correta.
-     */
     @Test
     fun testInitialEventListIsNotEmpty() {
         val initialEventsList = EventRepository.listaEventosIniciais
@@ -23,9 +16,6 @@ class EventRepositoryTest {
         assertEquals(7, initialEventsList.size)
     }
 
-    /**
-     * Valida que todos os eventos da lista pré-cadastrada contêm informações obrigatórias preenchidas.
-     */
     @Test
     fun testInitialEventsContainCompleteInformation() {
         val initialEventsList = EventRepository.listaEventosIniciais
@@ -43,9 +33,6 @@ class EventRepositoryTest {
         }
     }
 
-    /**
-     * Testa o filtro de eventos por categoria.
-     */
     @Test
     fun testFilterEventsByCategory() {
         val initialEventsList = EventRepository.listaEventosIniciais
@@ -69,9 +56,6 @@ class EventRepositoryTest {
         assertEquals(1, securityEvents.size)
     }
 
-    /**
-     * Testa a filtragem por situação do evento (Encerrado vs. Próximos).
-     */
     @Test
     fun testFilterEventsByStatus() {
         val initialEventsList = EventRepository.listaEventosIniciais
@@ -84,9 +68,6 @@ class EventRepositoryTest {
         assertEquals(6, upcomingEvents.size)
     }
 
-    /**
-     * Testa a busca de eventos por palavra-chave no título.
-     */
     @Test
     fun testSearchEventsByTitle() {
         val initialEventsList = EventRepository.listaEventosIniciais
@@ -101,9 +82,6 @@ class EventRepositoryTest {
         assertTrue(nonExistingResults.isEmpty())
     }
 
-    /**
-     * Testa a busca de evento por identificador único (ID).
-     */
     @Test
     fun testFindEventById() {
         val initialEventsList = EventRepository.listaEventosIniciais

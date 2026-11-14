@@ -2,9 +2,6 @@ package com.example.campushub.data.model
 
 import java.util.UUID
 
-/**
- * Data model representing an Audio message recorded for an Event in CampusHub.
- */
 data class EventAudio(
     val id: String = UUID.randomUUID().toString(),
     val eventoId: Int = 0,

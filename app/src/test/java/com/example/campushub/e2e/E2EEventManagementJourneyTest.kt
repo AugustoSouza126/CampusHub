@@ -13,10 +13,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Teste E2E 2: Ciclo de vida do Criador do Evento e engajamento social.
- * Executa localmente testando criação de eventos, comentários e avaliações.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
 class E2EEventManagementJourneyTest {
@@ -32,19 +28,11 @@ class E2EEventManagementJourneyTest {
         userRepo.salvarUsuario("Prof. Carlos Mendes", "1001", "carlos@universidade.edu.br", "senha123")
     }
 
-    /**
-     * Jornada completa do criador de evento:
-     * 1. Autenticação e criação do evento com e-mail do autor.
-     * 2. Engajamento social com comentários e avaliação por estrelas.
-     * 3. Edição e exclusão de comentários.
-     * 4. Encerramento da situação do evento.
-     */
     @Test
     fun testCompleteCreatorLifecycleAndEngagementJourney() {
         val creatorEmail = userRepo.getUsuarioEmail()
         assertEquals("carlos@universidade.edu.br", creatorEmail)
 
-        // Passo 1: Criação do novo evento pelo criador
         val newEvent = Event(
             id = 505,
             titulo = "Inteligência Artificial na Prática",
@@ -63,7 +51,6 @@ class E2EEventManagementJourneyTest {
         assertEquals(creatorEmail, newEvent.criadorEmail)
         assertFalse(newEvent.encerrado)
 
-        // Passo 2: Publicação de comentário no evento
         val commentText = "Excelente evento! Inscrições abertas para todos."
         userRepo.adicionarComentario(newEvent.id, commentText)
 
@@ -74,7 +61,6 @@ class E2EEventManagementJourneyTest {
         assertEquals(commentText, firstComment.texto)
         assertEquals(creatorEmail, firstComment.autorEmail)
 
-        // Passo 3: Edição e exclusão de comentário
         userRepo.atualizarComentario(firstComment.id, "Texto do comentário atualizado")
         val updatedComments = userRepo.getComentariosDoEvento(newEvent.id)
         assertEquals("Texto do comentário atualizado", updatedComments[0].texto)
@@ -82,7 +68,6 @@ class E2EEventManagementJourneyTest {
         userRepo.deletarComentario(firstComment.id)
         assertTrue(userRepo.getComentariosDoEvento(newEvent.id).isEmpty())
 
-        // Passo 4: Atualização de situação (Evento encerrado) e avaliação por estrelas
         val endedEvent = newEvent.copy(encerrado = true)
         assertTrue(endedEvent.encerrado)
 

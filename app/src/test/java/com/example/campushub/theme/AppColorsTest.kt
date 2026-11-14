@@ -9,17 +9,10 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Testes unitários para a paleta de cores oficial [AppColors].
- * Valida a exatidão dos códigos hexadecimais configurados no tema.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class AppColorsTest {
 
-    /**
-     * Valida os valores de cor em formato int convertidos do hexadecimal.
-     */
     @Test
     fun testAppColorsHexadecimalValues() {
         assertEquals(Color.parseColor("#1E40AF"), AppColors.COLOR_PRIMARY)
@@ -36,9 +29,6 @@ class AppColorsTest {
         assertEquals(Color.WHITE, AppColors.COLOR_CHIP_TEXT)
     }
 
-    /**
-     * Valida o contraste e distinção entre cores primárias e secundárias do aplicativo.
-     */
     @Test
     fun testColorsContrastAndDistinctness() {
         assertNotEquals(AppColors.COLOR_PRIMARY, AppColors.COLOR_BG)

@@ -13,25 +13,18 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Testes unitários para [UserPreferencesRepository] executando em ambiente de host JVM via Robolectric.
- * Gerencia preferências locais de usuário, inscrições, favoritos, comentários, avaliações e mídias.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
-class UserPreferencesRepositoryTest {
+class
+UserPreferencesRepositoryTest {
 
     private lateinit var repository: UserPreferencesRepository
 
     @Before
     fun setUp() {
-        // Inicializa o repositório utilizando o contexto da aplicação provido pelo Robolectric
         repository = UserPreferencesRepository(ApplicationProvider.getApplicationContext())
     }
 
-    /**
-     * Verifica os valores padrão de um usuário quando o armazenamento local está vazio.
-     */
     @Test
     fun testDefaultUserValuesWhenEmpty() {
         assertEquals("", repository.getUsuarioNome())
@@ -42,22 +35,17 @@ class UserPreferencesRepositoryTest {
         assertTrue(repository.getFavoritos().isEmpty())
     }
 
-    /**
-     * Testa a gravação e recuperação dos dados de perfil do usuário.
-     */
     @Test
     fun testSaveAndGetUserProfile() {
-        repository.salvarUsuario("Carlos Eduardo", "20261099", "carlos@campus.edu.br", "senha123")
+        repository.salvarUsuario("Carlos Eduardo", "20261099", "carlos@campus.edu.br", "senha123", "ALUNO")
 
         assertEquals("Carlos Eduardo", repository.getUsuarioNome())
         assertEquals("20261099", repository.getUsuarioMatricula())
         assertEquals("carlos@campus.edu.br", repository.getUsuarioEmail())
         assertEquals("senha123", repository.getUsuarioSenha())
+        assertEquals("ALUNO", repository.getUsuarioRole())
     }
 
-    /**
-     * Testa a confirmação, listagem e cancelamento de inscrição em eventos.
-     */
     @Test
     fun testEventSubscriptions() {
         val eventId = 101
@@ -72,9 +60,6 @@ class UserPreferencesRepositoryTest {
         assertFalse(repository.isInscrito(eventId))
     }
 
-    /**
-     * Testa a adição e remoção de eventos na lista de favoritos.
-     */
     @Test
     fun testFavoriteEvents() {
         val eventId = 202
@@ -88,9 +73,6 @@ class UserPreferencesRepositoryTest {
         assertFalse(repository.isFavorito(eventId))
     }
 
-    /**
-     * Testa o ciclo de vida de um comentário: adição, listagem, atualização e exclusão.
-     */
     @Test
     fun testEventCommentsLifecycle() {
         repository.salvarUsuario("Ana Paula", "20261111", "ana@campus.edu.br", "123456")
@@ -113,9 +95,6 @@ class UserPreferencesRepositoryTest {
         assertTrue(repository.getComentariosDoEvento(eventId).isEmpty())
     }
 
-    /**
-     * Testa atribuição de notas e cálculo automático de média e total de avaliações.
-     */
     @Test
     fun testEventRatingsAndAverageCalculation() {
         repository.salvarUsuario("Lucas Lima", "20262222", "lucas@campus.edu.br", "123456")
@@ -134,9 +113,6 @@ class UserPreferencesRepositoryTest {
         assertEquals(1, finalTotal)
     }
 
-    /**
-     * Testa adição, consulta e remoção de fotos de eventos.
-     */
     @Test
     fun testEventPhotosManagement() {
         repository.salvarUsuario("Fernanda", "20263333", "nanda@campus.edu.br", "123456")
@@ -153,9 +129,6 @@ class UserPreferencesRepositoryTest {
         assertTrue(repository.getFotosDoEvento(eventId).isEmpty())
     }
 
-    /**
-     * Testa adição, consulta e remoção de áudios de eventos.
-     */
     @Test
     fun testEventAudiosManagement() {
         repository.salvarUsuario("Gabriel", "20264444", "gabriel@campus.edu.br", "123456")
@@ -172,9 +145,6 @@ class UserPreferencesRepositoryTest {
         assertTrue(repository.getAudiosDoEvento(eventId).isEmpty())
     }
 
-    /**
-     * Testa adição, consulta e remoção de vídeos de eventos.
-     */
     @Test
     fun testEventVideosManagement() {
         repository.salvarUsuario("Juliana", "20265555", "juliana@campus.edu.br", "123456")
@@ -189,5 +159,16 @@ class UserPreferencesRepositoryTest {
 
         repository.deletarVideo(videosList.first().id)
         assertTrue(repository.getVideosDoEvento(eventId).isEmpty())
+    }
+
+    @Test
+    fun testUserRoleIdentification() {
+        repository.salvarUsuario("Professor Silva", "999999", "silva@campus.edu.br", "123456", "ORGANIZADOR")
+        assertTrue(repository.isOrganizador())
+        assertFalse(repository.isAluno())
+
+        repository.salvarUsuario("Aluno Novo", "111111", "novo@campus.edu.br", "123456", "ALUNO")
+        assertFalse(repository.isOrganizador())
+        assertTrue(repository.isAluno())
     }
 }

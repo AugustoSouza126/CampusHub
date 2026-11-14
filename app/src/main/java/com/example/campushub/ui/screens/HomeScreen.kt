@@ -18,17 +18,8 @@ import com.example.campushub.ui.components.UIComponents
 import com.example.campushub.ui.theme.AppColors
 import com.google.android.material.button.MaterialButton
 
-/**
- * Responsável por construir a Tela Inicial (Home) do CampusHub.
- * Apresenta opções de navegação rápida, campo de busca por título,
- * filtros por situação (Todos/Próximos/Encerrados) e por categoria,
- * além de listar dinamicamente os eventos cadastrados no Firebase.
- */
 object HomeScreen {
 
-    /**
-     * Constrói a interface visual completa da Tela Home.
-     */
     fun construirTelaHome(
         context: Context,
         layout: LinearLayout,
@@ -44,25 +35,24 @@ object HomeScreen {
 
         layout.addView(UIComponents.criarHeaderBar(context, saudacao, "Confira os eventos da universidade e garanta sua vaga."))
 
-        // Botões de Ação Rápida
-        layout.addView(UIComponents.criarBotao(context, "➕ CRIAR NOVO EVENTO", primario = true) {
-            onCriarNovoEvento()
-        })
+        if (userRepo.isOrganizador()) {
+            layout.addView(UIComponents.criarBotao(context, "➕ CRIAR NOVO EVENTO", primario = true) {
+                onCriarNovoEvento()
+            })
 
-        layout.addView(UIComponents.criarBotao(context, "📢 EVENTOS CRIADOS POR MIM", primario = false) {
-            onVerEventosCriados()
-        })
+            layout.addView(UIComponents.criarBotao(context, "📢 EVENTOS CRIADOS POR MIM", primario = false) {
+                onVerEventosCriados()
+            })
+        }
 
         var termoBusca = ""
         var situacaoSelecionada = "Todos"
         var categoriaSelecionada = "Todas"
 
-        // 1. Campo de Busca por Título
         layout.addView(UIComponents.criarRotulo(context, "Buscar por título"))
         val inputBusca = UIComponents.criarCampoTexto(context, "🔎 Digite o título do evento...")
         layout.addView(inputBusca)
 
-        // 2. Filtro de Situação (Todos / Próximos / Encerrados)
         layout.addView(UIComponents.criarRotulo(context, "Situação do evento"))
         val rowSituacao = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -82,7 +72,6 @@ object HomeScreen {
             orientation = LinearLayout.VERTICAL
         }
 
-        // Aplica os filtros de busca, categoria e situação à lista de eventos do Firebase
         fun aplicarFiltros() {
             containerEventos.removeAllViews()
 
@@ -183,7 +172,6 @@ object HomeScreen {
         atualizarEstiloSituacao()
         layout.addView(rowSituacao)
 
-        // 3. Filtro de Categoria (Carrossel Horizontal)
         layout.addView(UIComponents.criarRotulo(context, "Categoria"))
         val scrollCategorias = HorizontalScrollView(context).apply {
             isHorizontalScrollBarEnabled = false
@@ -245,7 +233,6 @@ object HomeScreen {
         scrollCategorias.addView(rowCategorias)
         layout.addView(scrollCategorias)
 
-        // Escutador de alterações no campo de busca para filtragem em tempo real
         inputBusca.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -255,7 +242,6 @@ object HomeScreen {
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        // Executa a filtragem inicial
         aplicarFiltros()
         layout.addView(containerEventos)
     }

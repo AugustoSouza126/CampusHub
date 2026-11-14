@@ -15,10 +15,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Testes unitários para [CreateEventScreen].
- * Valida a construção do formulário de publicação e edição de eventos.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class CreateEventScreenTest {
@@ -34,9 +30,6 @@ class CreateEventScreenTest {
         userRepository = UserPreferencesRepository(ApplicationProvider.getApplicationContext())
     }
 
-    /**
-     * Testa a montagem do formulário de criação para um novo evento.
-     */
     @Test
     fun testBuildCreateNewEventScreen() {
         val parentLayout = LinearLayout(context)
@@ -54,9 +47,6 @@ class CreateEventScreenTest {
         assertTrue(parentLayout.childCount > 0)
     }
 
-    /**
-     * Testa o preenchimento automático do formulário com os dados de um evento existente em modo de edição.
-     */
     @Test
     fun testBuildEditExistingEventScreen() {
         val parentLayout = LinearLayout(context)

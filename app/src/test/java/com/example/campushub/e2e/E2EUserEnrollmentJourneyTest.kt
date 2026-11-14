@@ -13,10 +13,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Teste E2E 1: Jornada completa do Aluno (Cadastro, Busca, Inscrição e Favoritos).
- * Executa localmente testando a integração de ponta a ponta.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
 class E2EUserEnrollmentJourneyTest {
@@ -30,17 +26,8 @@ class E2EUserEnrollmentJourneyTest {
         userRepo = UserPreferencesRepository(context)
     }
 
-    /**
-     * Jornada completa do aluno:
-     * 1. Cadastro do perfil do aluno.
-     * 2. Busca e filtragem de eventos por título.
-     * 3. Inscrição e adição do evento aos favoritos.
-     * 4. Validação do evento nas abas de Inscrições e Favoritos.
-     * 5. Cancelamento de inscrição e limpeza.
-     */
     @Test
     fun testCompleteStudentOnboardingAndEnrollmentJourney() {
-        // Passo 1: Cadastro do perfil do aluno
         val userName = "Mariana Oliveira"
         val userMatricula = "20262099"
         val userEmail = "mariana@universidade.edu.br"
@@ -52,7 +39,6 @@ class E2EUserEnrollmentJourneyTest {
         assertEquals(userMatricula, userRepo.getUsuarioMatricula())
         assertEquals(userEmail, userRepo.getUsuarioEmail())
 
-        // Passo 2: Busca e filtragem por título de evento
         val allEvents = EventRepository.listaEventosIniciais
         assertFalse(allEvents.isEmpty())
 
@@ -62,7 +48,6 @@ class E2EUserEnrollmentJourneyTest {
         val selectedEvent = searchedEvents[0]
         val eventId = selectedEvent.id
 
-        // Passo 3: Inscrição e Favoritismo
         assertFalse(userRepo.isInscrito(eventId))
         assertFalse(userRepo.isFavorito(eventId))
 
@@ -72,14 +57,12 @@ class E2EUserEnrollmentJourneyTest {
         userRepo.salvarFavorito(eventId)
         assertTrue(userRepo.isFavorito(eventId))
 
-        // Passo 4: Validação nas listas de Inscrições e Favoritos
         val mySubscriptions = userRepo.getInscricoes()
         assertTrue(mySubscriptions.contains(eventId.toString()))
 
         val myFavorites = userRepo.getFavoritos()
         assertTrue(myFavorites.contains(eventId.toString()))
 
-        // Passo 5: Cancelamento de inscrição
         userRepo.removerInscricao(eventId)
         assertFalse(userRepo.isInscrito(eventId))
     }

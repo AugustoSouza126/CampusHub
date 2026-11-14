@@ -28,22 +28,15 @@ import com.example.campushub.ui.screens.ProfileScreen
 import com.example.campushub.ui.screens.SubscriptionsScreen
 import java.io.File
 
-/**
- * Atividade Principal do CampusHub.
- * Atua como o orquestrador de navegação do aplicativo, gerenciando as telas,
- * permissões e lançadores de câmera e galeria para publicação de fotos, áudios e vídeos.
- */
 class MainActivity : AppCompatActivity() {
 
     private lateinit var userRepo: UserPreferencesRepository
     private var telaAtual = "HOME"
 
-    // Cache e referências da Tela de Detalhes para manter posição de rolagem em tempo real
     private var currentDetailRoot: FrameLayout? = null
     private var currentDetailLayout: LinearLayout? = null
     private var currentDetailScrollView: ScrollView? = null
 
-    // Estados e lançadores de mídia (Câmera, Galeria, Gravação de Vídeo e Áudio)
     private var eventoIdAtualParaMidia: Int = 0
     private var photoFileCamera: File? = null
     private var videoFileCamera: File? = null
@@ -101,7 +94,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         userRepo = UserPreferencesRepository(this)
 
-        // Configuração do botão voltar nativo do Android
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (telaAtual != "HOME" && telaAtual != "LOGIN") {
@@ -112,7 +104,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        // Redireciona para Home se logado ou Login se deslogado
         if (AuthRepository.isUsuarioLogado()) {
             mostrarHome()
         } else {
@@ -120,13 +111,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // =========================================================
-    // NAVEGAÇÃO & CRIAÇÃO DE TELA BASE
-    // =========================================================
-
-    /**
-     * Cria e define a estrutura base do layout da tela na Activity.
-     */
     private fun criarTelaBase(
         exibirBottomNav: Boolean = true,
         abaAtiva: String = "HOME",
@@ -151,18 +135,11 @@ class MainActivity : AppCompatActivity() {
         return Pair(root, layout)
     }
 
-    /**
-     * Realiza o logout do usuário através do [AuthRepository] e redireciona para a tela de login.
-     */
     private fun deslogarUsuario() {
         limparDetalhesCache()
         AuthRepository.deslogar()
         mostrarLogin()
     }
-
-    // =========================================================
-    // LANÇADORES DE CÂMERA, GALERIA, VÍDEO E ÁUDIO
-    // =========================================================
 
     private fun tirarFotoCamera(eventoId: Int, onConcluido: () -> Unit) {
         eventoIdAtualParaMidia = eventoId
@@ -219,10 +196,6 @@ class MainActivity : AppCompatActivity() {
         requestPermissionLauncher.launch(arrayOf(android.Manifest.permission.RECORD_AUDIO))
     }
 
-    // =========================================================
-    // FLUXO DE AUTENTICAÇÃO (LOGIN, CADASTRO, RECUPERAÇÃO)
-    // =========================================================
-
     private fun mostrarLogin() {
         limparDetalhesCache()
         telaAtual = "LOGIN"
@@ -264,10 +237,6 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    // =========================================================
-    // TELA PRINCIPAL (HOME)
-    // =========================================================
-
     private fun mostrarHome() {
         limparDetalhesCache()
         telaAtual = "HOME"
@@ -282,10 +251,6 @@ class MainActivity : AppCompatActivity() {
             onVerDetalhes = { evento -> mostrarDetalhes(evento) }
         )
     }
-
-    // =========================================================
-    // CRIAR / EDITAR EVENTO
-    // =========================================================
 
     private fun mostrarCriarEvento(eventoParaEditar: Event? = null) {
         limparDetalhesCache()
@@ -306,10 +271,6 @@ class MainActivity : AppCompatActivity() {
         mostrarCriarEvento(evento)
     }
 
-    // =========================================================
-    // EVENTOS CRIADOS POR MIM
-    // =========================================================
-
     private fun mostrarEventosCriados() {
         limparDetalhesCache()
         telaAtual = "EVENTOS_CRIADOS"
@@ -325,10 +286,6 @@ class MainActivity : AppCompatActivity() {
             onVoltar = { mostrarHome() }
         )
     }
-
-    // =========================================================
-    // DETALHES DO EVENTO (ATUALIZAÇÃO EM TEMPO REAL SEM DUPLICAR HEADER)
-    // =========================================================
 
     private fun recarregarDetalhesEmMesmaPosicao(evento: Event) {
         if (currentDetailLayout != null && currentDetailScrollView != null && telaAtual == "DETALHES") {
@@ -424,10 +381,6 @@ class MainActivity : AppCompatActivity() {
         currentDetailScrollView = null
     }
 
-    // =========================================================
-    // FAVORITOS
-    // =========================================================
-
     private fun mostrarFavoritos() {
         limparDetalhesCache()
         telaAtual = "FAVORITOS"
@@ -442,10 +395,6 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    // =========================================================
-    // MINHAS INSCRIÇÕES / MEUS EVENTOS
-    // =========================================================
-
     private fun mostrarMeusEventos() {
         limparDetalhesCache()
         telaAtual = "MEUS_EVENTOS"
@@ -459,10 +408,6 @@ class MainActivity : AppCompatActivity() {
             onExplorarEventos = { mostrarHome() }
         )
     }
-
-    // =========================================================
-    // PERFIL & EDITAR PERFIL
-    // =========================================================
 
     private fun mostrarPerfil() {
         limparDetalhesCache()

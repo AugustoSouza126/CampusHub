@@ -12,10 +12,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Testes unitários para utilitários de mídia [MediaHelper].
- * Testa geração de arquivos locais para foto/vídeo e controle de estados de áudio.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class MediaHelperTest {
@@ -27,9 +23,6 @@ class MediaHelperTest {
         context = ApplicationProvider.getApplicationContext()
     }
 
-    /**
-     * Testa a criação de um novo arquivo temporário JPG para captura de foto via câmera.
-     */
     @Test
     fun testCreateCameraPhotoFile() {
         val photoFile = MediaHelper.criarArquivoFotoCamera(context)
@@ -38,9 +31,6 @@ class MediaHelperTest {
         assertTrue(photoFile.name.endsWith(".jpg"))
     }
 
-    /**
-     * Testa a criação de um novo arquivo temporário MP4 para gravação de vídeo via câmera.
-     */
     @Test
     fun testCreateCameraVideoFile() {
         val videoFile = MediaHelper.criarArquivoVideoCamera(context)
@@ -49,15 +39,11 @@ class MediaHelperTest {
         assertTrue(videoFile.name.endsWith(".mp4"))
     }
 
-    /**
-     * Verifica os estados iniciais do gravador/reprodutor e a parada segura de áudio e gravação.
-     */
     @Test
     fun testInitialMediaStateAndStopMethods() {
         assertFalse(MediaHelper.isGravando())
         assertFalse(MediaHelper.isTocando())
 
-        // Efetua chamadas de interrupção quando nenhum áudio está em execução para garantir resiliência
         MediaHelper.pararAudio()
         MediaHelper.pararGravacaoAudio()
 

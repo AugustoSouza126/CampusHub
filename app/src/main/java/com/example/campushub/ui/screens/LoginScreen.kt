@@ -3,22 +3,16 @@ package com.example.campushub.ui.screens
 import android.content.Context
 import android.text.InputType
 import android.util.Patterns
+import android.widget.ArrayAdapter
 import android.widget.LinearLayout
+import android.widget.Spinner
 import android.widget.Toast
 import com.example.campushub.data.repository.AuthRepository
 import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.components.UIComponents
 
-/**
- * Responsável por construir as telas do fluxo de autenticação de usuários:
- * Login, Cadastro de Conta e Recuperação de Senha.
- */
 object LoginScreen {
 
-    /**
-     * Constrói e exibe a tela de Login com campos para e-mail e senha,
-     * botão de autenticação via Firebase e atalhos para cadastro/recuperação.
-     */
     fun construirTelaLogin(
         context: Context,
         layout: LinearLayout,
@@ -78,10 +72,6 @@ object LoginScreen {
         })
     }
 
-    /**
-     * Constrói e exibe a tela de Cadastro de Nova Conta Acadêmica,
-     * realizando as validações de nome, matrícula, formato de e-mail e confirmação de senha.
-     */
     fun construirTelaCadastro(
         context: Context,
         layout: LinearLayout,
@@ -123,12 +113,23 @@ object LoginScreen {
         )
         layout.addView(inputConfirmarSenha)
 
+        val spinnerRole = Spinner(context).apply {
+            adapter = ArrayAdapter(
+                context,
+                android.R.layout.simple_spinner_dropdown_item,
+                arrayOf("Aluno", "Organizador")
+            )
+            setPadding(UIComponents.dpToPx(context, 16), UIComponents.dpToPx(context, 14), UIComponents.dpToPx(context, 16), UIComponents.dpToPx(context, 14))
+        }
+        layout.addView(spinnerRole)
+
         layout.addView(UIComponents.criarBotao(context, "FINALIZAR CADASTRO") {
             val nome = inputNome.text.toString().trim()
             val matricula = inputMatricula.text.toString().trim()
             val email = inputEmail.text.toString().trim()
             val senha = inputSenha.text.toString()
             val confirmarSenha = inputConfirmarSenha.text.toString()
+            val selectedRole = if (spinnerRole.selectedItem.toString() == "Organizador") "ORGANIZADOR" else "ALUNO"
 
             if (nome.isEmpty()) {
                 Toast.makeText(context, "Digite seu nome completo.", Toast.LENGTH_SHORT).show()
@@ -165,7 +166,7 @@ object LoginScreen {
                 senha = senha,
                 nome = nome,
                 onSuccess = { _ ->
-                    userRepo.salvarUsuario(nome, matricula, email, senha)
+                    userRepo.salvarUsuario(nome, matricula, email, senha, selectedRole)
                     Toast.makeText(context, "Conta criada com sucesso no Firebase!", Toast.LENGTH_SHORT).show()
                     onCadastroSucesso()
                 },
@@ -180,10 +181,6 @@ object LoginScreen {
         })
     }
 
-    /**
-     * Constrói e exibe a tela de Recuperação de Senha, enviando um e-mail de redefinição
-     * através das APIs de autenticação do Firebase.
-     */
     fun construirTelaRecuperacao(
         context: Context,
         layout: LinearLayout,

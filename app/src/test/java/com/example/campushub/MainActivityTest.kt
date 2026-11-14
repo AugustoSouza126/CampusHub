@@ -12,17 +12,12 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Testes unitários para a atividade principal [MainActivity].
- * Valida a instanciação da Activity orquestradora da aplicação.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class MainActivityTest {
 
     @Before
     fun setUp() {
-        // Configura ambiente do FirebaseApp para evitar erros de inicialização durante a criação de atividades
         val appContext = ApplicationProvider.getApplicationContext<Context>()
         if (FirebaseApp.getApps(appContext).isEmpty()) {
             val firebaseOptions = FirebaseOptions.Builder()
@@ -34,9 +29,6 @@ class MainActivityTest {
         }
     }
 
-    /**
-     * Testa a instanciação do controlador e criação do objeto [MainActivity].
-     */
     @Test
     fun testMainActivityCreation() {
         val activityController = Robolectric.buildActivity(MainActivity::class.java)

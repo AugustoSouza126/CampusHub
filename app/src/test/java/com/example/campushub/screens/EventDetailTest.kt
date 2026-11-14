@@ -15,10 +15,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Testes unitários para [EventDetail].
- * Valida a tela de detalhes de evento para alunos e para o criador do evento.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class EventDetailTest {
@@ -34,9 +30,6 @@ class EventDetailTest {
         userRepository = UserPreferencesRepository(ApplicationProvider.getApplicationContext())
     }
 
-    /**
-     * Testa a exibição dos detalhes de um evento comum para alunos.
-     */
     @Test
     fun testBuildEventDetailsScreenForStudent() {
         val parentLayout = LinearLayout(context)
@@ -68,9 +61,6 @@ class EventDetailTest {
         assertTrue(parentLayout.childCount > 0)
     }
 
-    /**
-     * Testa a renderização da tela de detalhes exibindo o painel exclusivo para o criador do evento.
-     */
     @Test
     fun testBuildEventDetailsScreenForCreatorAndEndedEvent() {
         val parentLayout = LinearLayout(context)

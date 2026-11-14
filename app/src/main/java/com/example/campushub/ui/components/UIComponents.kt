@@ -13,23 +13,12 @@ import androidx.cardview.widget.CardView
 import com.example.campushub.ui.theme.AppColors
 import com.google.android.material.button.MaterialButton
 
-/**
- * Utilitário de componentes visuais reutilizáveis para a interface do aplicativo CampusHub.
- * Centraliza a criação de layouts, botões, campos de texto, cabeçalhos e navegação.
- */
 object UIComponents {
 
-    /**
-     * Converte o valor em Densidade de Pixels (dp) para Pixels (px) reais do dispositivo.
-     */
     fun dpToPx(context: Context, dp: Int): Int {
         return (dp * context.resources.displayMetrics.density).toInt()
     }
 
-    /**
-     * Cria um fundo desenhável (GradientDrawable) personalizado com cor de fundo,
-     * cor de contorno (stroke), largura do contorno e raio nos cantos.
-     */
     fun criarShape(
         context: Context,
         bgColor: Int,
@@ -49,9 +38,6 @@ object UIComponents {
         }
     }
 
-    /**
-     * Cria e retorna um [TextView] estilizado para atuar como rótulo (Label) de campos de formulário.
-     */
     fun criarRotulo(context: Context, texto: String): TextView {
         return TextView(context).apply {
             this.text = texto
@@ -62,9 +48,6 @@ object UIComponents {
         }
     }
 
-    /**
-     * Cria e retorna um [EditText] padronizado para entrada de dados (e-mail, senha, texto simples, etc.).
-     */
     fun criarCampoTexto(
         context: Context,
         hint: String,
@@ -91,9 +74,6 @@ object UIComponents {
         }
     }
 
-    /**
-     * Cria e retorna uma instância de [Button] compatível (MaterialButton com fallback para Button padrão).
-     */
     fun criarButtonInstance(context: Context): Button {
         return try {
             MaterialButton(context)
@@ -102,9 +82,6 @@ object UIComponents {
         }
     }
 
-    /**
-     * Cria e retorna um [FrameLayout] estilizado como Card (CardView com fallback para FrameLayout simples).
-     */
     fun criarCardView(
         context: Context,
         radiusDp: Float = 16f,
@@ -138,12 +115,6 @@ object UIComponents {
         }
     }
 
-    /**
-     * Cria e retorna um [Button] (MaterialButton) estilizado de acordo com o tipo visual:
-     * - Primário: Fundo Azul Real e texto BRANCO PURO.
-     * - Secundário: Fundo claro neutro e texto escuro grafite.
-     * - Perigo: Fundo avermelhado e texto vermelho para ações destrutivas.
-     */
     fun criarBotao(
         context: Context,
         texto: String,
@@ -176,10 +147,6 @@ object UIComponents {
         }
     }
 
-    /**
-     * Cria a barra de cabeçalho (Header) superior com fundo Azul Real vibrante.
-     * Se [onVoltar] for fornecido, exibe um botão circular branco perfeitamente centralizado com a flecha '<'.
-     */
     fun criarHeaderBar(
         context: Context,
         titulo: String,
@@ -266,10 +233,6 @@ object UIComponents {
         return header
     }
 
-    /**
-     * Cria a barra de navegação inferior (Bottom Navigation) com ícones para alternar
-     * entre as abas principais (Home, Favoritos, Inscrições, Perfil).
-     */
     fun criarBottomNav(
         context: Context,
         abaAtiva: String,
@@ -327,11 +290,6 @@ object UIComponents {
         return navContainer
     }
 
-    /**
-     * Monta o layout base da tela contendo ScrollView, Container para os elementos do corpo
-     * e insere opcionalmente a barra de navegação inferior.
-     * Suporta restauração opcional da posição de rolagem [restoreScrollY].
-     */
     fun criarTelaBase(
         context: Context,
         exibirBottomNav: Boolean = true,

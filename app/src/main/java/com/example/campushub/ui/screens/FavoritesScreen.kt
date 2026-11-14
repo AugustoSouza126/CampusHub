@@ -12,16 +12,8 @@ import com.example.campushub.ui.components.EventCard
 import com.example.campushub.ui.components.UIComponents
 import com.example.campushub.ui.theme.AppColors
 
-/**
- * Responsável por construir a Tela de Favoritos no CampusHub.
- * Filtra e exibe somente os eventos marcados pelo usuário com coração (❤️).
- */
 object FavoritesScreen {
 
-    /**
-     * Constrói a interface visual da Tela de Favoritos.
-     * Busca os IDs favoritados salvos nas preferências locais e carrega os dados atualizados do Firebase.
-     */
     fun construirTelaFavoritos(
         context: Context,
         layout: LinearLayout,

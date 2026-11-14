@@ -19,19 +19,8 @@ import com.example.campushub.ui.theme.AppColors
 import com.google.android.material.button.MaterialButton
 import java.util.Locale
 
-/**
- * Responsável por construir a Tela de Detalhes do Evento.
- * Exibe informações completas (data, horário, local, endereço, mapa MapLibre),
- * painel exclusivo para o criador do evento (editar/encerrar/excluir),
- * gerencia inscrição, favoritos, fotos publicadas, áudios gravados, vídeos curtos,
- * avaliações (1 a 5 estrelas) e comentários dos alunos.
- */
 object EventDetail {
 
-    /**
-     * Constrói a interface completa da Tela de Detalhes do Evento.
-     * Suporta o botão de voltar com flecha no cabeçalho e preserva a posição de rolagem nas interações.
-     */
     fun construirTelaDetalhes(
         context: Context,
         layout: LinearLayout,
@@ -46,17 +35,14 @@ object EventDetail {
         onAtualizarTela: (restoreScrollY: Int) -> Unit,
         onVoltar: () -> Unit
     ) {
-        // Função auxiliar para atualizar a tela mantendo a posição de rolagem atual
         fun atualizarManterPosicao() {
             val parentScroll = (layout.parent?.parent as? ScrollView) ?: (layout.parent as? ScrollView)
             val currentY = parentScroll?.scrollY ?: 0
             onAtualizarTela(currentY)
         }
 
-        // Cabeçalho superior com botão de flecha de voltar no canto esquerdo
         layout.addView(UIComponents.criarHeaderBar(context, evento.titulo, "Categoria: ${evento.categoria}", onVoltar = onVoltar))
 
-        // 1. CARD DE INFORMAÇÕES BÁSICAS DO EVENTO
         val cardInfo = UIComponents.criarCardView(context, 16f, 4f, 20, AppColors.COLOR_CARD_BG)
 
         val innerInfo = LinearLayout(context).apply {
@@ -100,7 +86,6 @@ object EventDetail {
         cardInfo.addView(innerInfo)
         layout.addView(cardInfo)
 
-        // 2. CARD DO MAPA (MAPLIBRE SDK)
         val cardMapa = UIComponents.criarCardView(context, 16f, 4f, 16, AppColors.COLOR_CARD_BG)
 
         val layoutMapa = LinearLayout(context).apply {
@@ -128,7 +113,6 @@ object EventDetail {
         }
         layoutMapa.addView(tvEnderecoSub)
 
-        // Renderiza o mapa interativo do MapLibre centralizado no ponto do evento
         val lat = if (evento.latitude != 0.0) evento.latitude else -23.55052
         val lng = if (evento.longitude != 0.0) evento.longitude else -46.633308
 
@@ -142,7 +126,6 @@ object EventDetail {
         )
         layoutMapa.addView(mapaView)
 
-        // Botão para abrir a rota em aplicativo de mapa externo
         val btnAbrirExterno = UIComponents.criarBotao(context, "🧭 ABRIR ROTA NO MAPA EXTERNO", primario = false) {
             val uri = Uri.parse("geo:$lat,$lng?q=$lat,$lng(${Uri.encode(evento.titulo)})")
             val intent = Intent(Intent.ACTION_VIEW, uri)
@@ -165,8 +148,7 @@ object EventDetail {
         }
         layout.addView(cardMapa, paramsCardMapa)
 
-        // PAINEL DO CRIADOR DO EVENTO (Opções de Editar, Encerrar e Excluir)
-        val ehCriador = evento.criadorEmail.equals(userRepo.getUsuarioEmail(), ignoreCase = true) && userRepo.getUsuarioEmail().isNotEmpty()
+        val ehCriador = evento.criadorEmail.equals(userRepo.getUsuarioEmail(), ignoreCase = true) && userRepo.getUsuarioEmail().isNotEmpty() && userRepo.isOrganizador()
         if (ehCriador) {
             val cardCriador = UIComponents.criarCardView(context, 16f, 4f, 16, Color.parseColor("#FEF3C7"))
 
@@ -248,7 +230,6 @@ object EventDetail {
             layout.addView(cardCriador, paramsCriador)
         }
 
-        // 3. BOTÃO DE FAVORITO
         val eFavorito = userRepo.isFavorito(evento.id)
         if (eFavorito) {
             layout.addView(UIComponents.criarBotao(context, "💔 DESFAVORITAR EVENTO", primario = false) {
@@ -264,41 +245,41 @@ object EventDetail {
             })
         }
 
-        // 4. BOTÃO DE INSCRIÇÃO
-        val inscrito = userRepo.isInscrito(evento.id)
-        if (inscrito) {
-            val tvStatus = TextView(context).apply {
-                text = "✅ Sua inscrição está confirmada neste evento."
-                textSize = 14f
-                typeface = Typeface.DEFAULT_BOLD
-                setTextColor(AppColors.COLOR_GREEN_TEXT)
-                setPadding(0, UIComponents.dpToPx(context, 16), 0, UIComponents.dpToPx(context, 8))
-            }
-            layout.addView(tvStatus)
+        if (userRepo.isAluno()) {
+            val inscrito = userRepo.isInscrito(evento.id)
+            if (inscrito) {
+                val tvStatus = TextView(context).apply {
+                    text = "✅ Sua inscrição está confirmada neste evento."
+                    textSize = 14f
+                    typeface = Typeface.DEFAULT_BOLD
+                    setTextColor(AppColors.COLOR_GREEN_TEXT)
+                    setPadding(0, UIComponents.dpToPx(context, 16), 0, UIComponents.dpToPx(context, 8))
+                }
+                layout.addView(tvStatus)
 
-            layout.addView(UIComponents.criarBotao(context, "CANCELAR INSCRIÇÃO", primario = false, perigo = true) {
-                userRepo.removerInscricao(evento.id)
-                Toast.makeText(context, "Inscrição cancelada com sucesso.", Toast.LENGTH_SHORT).show()
-                atualizarManterPosicao()
-            })
-        } else if (evento.encerrado) {
-            val tvStatusEncerrado = TextView(context).apply {
-                text = "🏁 Inscrições encerradas para este evento."
-                textSize = 14f
-                typeface = Typeface.DEFAULT_BOLD
-                setTextColor(Color.parseColor("#64748B"))
-                setPadding(0, UIComponents.dpToPx(context, 16), 0, UIComponents.dpToPx(context, 8))
+                layout.addView(UIComponents.criarBotao(context, "CANCELAR INSCRIÇÃO", primario = false, perigo = true) {
+                    userRepo.removerInscricao(evento.id)
+                    Toast.makeText(context, "Inscrição cancelada com sucesso.", Toast.LENGTH_SHORT).show()
+                    atualizarManterPosicao()
+                })
+            } else if (evento.encerrado) {
+                val tvStatusEncerrado = TextView(context).apply {
+                    text = "🏁 Inscrições encerradas para este evento."
+                    textSize = 14f
+                    typeface = Typeface.DEFAULT_BOLD
+                    setTextColor(Color.parseColor("#64748B"))
+                    setPadding(0, UIComponents.dpToPx(context, 16), 0, UIComponents.dpToPx(context, 8))
+                }
+                layout.addView(tvStatusEncerrado)
+            } else {
+                layout.addView(UIComponents.criarBotao(context, "INSCREVER-SE NO EVENTO") {
+                    userRepo.salvarInscricao(evento.id)
+                    Toast.makeText(context, "Inscrição realizada com sucesso!", Toast.LENGTH_SHORT).show()
+                    atualizarManterPosicao()
+                })
             }
-            layout.addView(tvStatusEncerrado)
-        } else {
-            layout.addView(UIComponents.criarBotao(context, "INSCREVER-SE NO EVENTO") {
-                userRepo.salvarInscricao(evento.id)
-                Toast.makeText(context, "Inscrição realizada com sucesso!", Toast.LENGTH_SHORT).show()
-                atualizarManterPosicao()
-            })
         }
 
-        // 5. SEÇÃO DE FOTOS DO EVENTO (Câmera / Galeria local)
         EventMediaComponent.construirSecaoFotos(
             context = context,
             layout = layout,
@@ -309,7 +290,6 @@ object EventDetail {
             onAtualizarTela = { atualizarManterPosicao() }
         )
 
-        // 6. SEÇÃO DE VÍDEOS DO EVENTO (Câmera / Galeria local)
         EventMediaComponent.construirSecaoVideos(
             context = context,
             layout = layout,
@@ -320,7 +300,6 @@ object EventDetail {
             onAtualizarTela = { atualizarManterPosicao() }
         )
 
-        // 7. SEÇÃO DE ÁUDIOS DO EVENTO (Gravação / Reprodução local)
         EventMediaComponent.construirSecaoAudios(
             context = context,
             layout = layout,
@@ -330,17 +309,12 @@ object EventDetail {
             onAtualizarTela = { atualizarManterPosicao() }
         )
 
-        // 8. SEÇÃO DE AVALIAÇÃO (De 1 a 5 Estrelas)
+        val inscrito = userRepo.isInscrito(evento.id)
         construirSecaoAvaliacao(context, layout, evento, userRepo, inscrito) { atualizarManterPosicao() }
 
-        // 9. SEÇÃO DE COMENTÁRIOS DOS ALUNOS
         construirSecaoComentarios(context, layout, evento, userRepo) { atualizarManterPosicao() }
     }
 
-    /**
-     * Constrói o bloco visual de Avaliação por Estrelas (1 a 5), permitindo que
-     * alunos inscritos atribuam ou alterem sua nota após o encerramento do evento.
-     */
     private fun construirSecaoAvaliacao(
         context: Context,
         layout: LinearLayout,
@@ -464,10 +438,6 @@ object EventDetail {
         layout.addView(cardAvaliacao, paramsCardAvaliacao)
     }
 
-    /**
-     * Constrói a seção de Comentários, permitindo publicar novos comentários,
-     * listar comentários existentes e dar permissão para editar/excluir comentários próprios.
-     */
     private fun construirSecaoComentarios(
         context: Context,
         layout: LinearLayout,

@@ -20,16 +20,13 @@ class UserPreferencesRepository(context: Context) {
     private val prefs: SharedPreferences =
         context.getSharedPreferences("campushub_prefs", Context.MODE_PRIVATE)
 
-    // =========================================================
-    // USUÁRIO & AUTENTICAÇÃO
-    // =========================================================
-
-    fun salvarUsuario(nome: String, matricula: String, email: String, senha: String) {
+    fun salvarUsuario(nome: String, matricula: String, email: String, senha: String, role: String = "ALUNO") {
         prefs.edit()
             .putString("user_name", nome)
             .putString("user_matricula", matricula)
             .putString("user_email", email)
             .putString("user_password", senha)
+            .putString("user_role", role)
             .apply()
     }
 
@@ -37,10 +34,9 @@ class UserPreferencesRepository(context: Context) {
     fun getUsuarioMatricula(): String = prefs.getString("user_matricula", "") ?: ""
     fun getUsuarioEmail(): String = prefs.getString("user_email", "") ?: ""
     fun getUsuarioSenha(): String = prefs.getString("user_password", "") ?: ""
-
-    // =========================================================
-    // INSCRIÇÕES EM EVENTOS
-    // =========================================================
+    fun getUsuarioRole(): String = prefs.getString("user_role", "ALUNO") ?: "ALUNO"
+    fun isOrganizador(): Boolean = getUsuarioRole() == "ORGANIZADOR"
+    fun isAluno(): Boolean = getUsuarioRole() == "ALUNO"
 
     fun getInscricoes(): MutableSet<String> {
         val set = prefs.getStringSet("user_inscricoes", null)
@@ -63,10 +59,6 @@ class UserPreferencesRepository(context: Context) {
         return getInscricoes().contains(eventoId.toString())
     }
 
-    // =========================================================
-    // FAVORITOS
-    // =========================================================
-
     fun getFavoritos(): MutableSet<String> {
         val set = prefs.getStringSet("user_favoritos", null)
         return set?.toMutableSet() ?: mutableSetOf()
@@ -87,10 +79,6 @@ class UserPreferencesRepository(context: Context) {
     fun isFavorito(eventoId: Int): Boolean {
         return getFavoritos().contains(eventoId.toString())
     }
-
-    // =========================================================
-    // COMENTÁRIOS
-    // =========================================================
 
     fun getTodosComentarios(): List<EventComment> {
         val jsonStr = prefs.getString("user_comentarios", "[]") ?: "[]"
@@ -166,10 +154,6 @@ class UserPreferencesRepository(context: Context) {
         salvarTodosComentarios(lista)
     }
 
-    // =========================================================
-    // AVALIAÇÕES (NOTAS DE 1 A 5 ESTRELAS)
-    // =========================================================
-
     fun getTodasAvaliacoes(): List<EventRating> {
         val jsonStr = prefs.getString("user_avaliacoes", "[]") ?: "[]"
         val lista = mutableListOf<EventRating>()
@@ -230,10 +214,6 @@ class UserPreferencesRepository(context: Context) {
         val media = soma.toFloat() / avaliacoes.size
         return Pair(media, avaliacoes.size)
     }
-
-    // =========================================================
-    // FOTOS DOS EVENTOS
-    // =========================================================
 
     fun getTodasFotos(): List<EventPhoto> {
         val jsonStr = prefs.getString("user_fotos", "[]") ?: "[]"
@@ -305,10 +285,6 @@ class UserPreferencesRepository(context: Context) {
         val lista = getTodasFotos().filter { it.id != fotoId }
         salvarTodasFotos(lista)
     }
-
-    // =========================================================
-    // ÁUDIOS DOS EVENTOS
-    // =========================================================
 
     fun getTodosAudios(): List<EventAudio> {
         val jsonStr = prefs.getString("user_audios", "[]") ?: "[]"
@@ -383,10 +359,6 @@ class UserPreferencesRepository(context: Context) {
         val lista = getTodosAudios().filter { it.id != audioId }
         salvarTodosAudios(lista)
     }
-
-    // =========================================================
-    // VÍDEOS DOS EVENTOS
-    // =========================================================
 
     fun getTodosVideos(): List<EventVideo> {
         val jsonStr = prefs.getString("user_videos", "[]") ?: "[]"

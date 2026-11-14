@@ -14,10 +14,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/**
- * Testes unitários para [FavoritesScreen].
- * Valida a tela de listagem de eventos salvos nos favoritos.
- */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class FavoritesScreenTest {
@@ -33,9 +29,6 @@ class FavoritesScreenTest {
         userRepository = UserPreferencesRepository(ApplicationProvider.getApplicationContext())
     }
 
-    /**
-     * Testa a construção da tela de eventos favoritos.
-     */
     @Test
     fun testBuildFavoritesScreen() {
         val parentLayout = LinearLayout(context)
