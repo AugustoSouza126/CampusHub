@@ -50,9 +50,10 @@ object LoginScreen {
                 onSuccess = { user ->
                     userRepo.salvarUsuario(
                         nome = user.displayName ?: userRepo.getUsuarioNome(),
-                        matricula = userRepo.getUsuarioMatricula(),
+                        matricula = userRepo.getUsuarioMatricula().ifEmpty { (10000000..99999999).random().toString() },
                         email = user.email ?: emailDigitado,
-                        senha = senhaDigitada
+                        senha = senhaDigitada,
+                        role = userRepo.getUsuarioRole()
                     )
                     Toast.makeText(context, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show()
                     onLoginSucesso()
@@ -84,10 +85,6 @@ object LoginScreen {
         layout.addView(UIComponents.criarRotulo(context, "Nome completo"))
         val inputNome = UIComponents.criarCampoTexto(context, "Ex: João da Silva")
         layout.addView(inputNome)
-
-        layout.addView(UIComponents.criarRotulo(context, "Matrícula"))
-        val inputMatricula = UIComponents.criarCampoTexto(context, "Ex: 2026100123", InputType.TYPE_CLASS_NUMBER)
-        layout.addView(inputMatricula)
 
         layout.addView(UIComponents.criarRotulo(context, "E-mail"))
         val inputEmail = UIComponents.criarCampoTexto(
@@ -125,7 +122,7 @@ object LoginScreen {
 
         layout.addView(UIComponents.criarBotao(context, "FINALIZAR CADASTRO") {
             val nome = inputNome.text.toString().trim()
-            val matricula = inputMatricula.text.toString().trim()
+            val matricula = (10000000..99999999).random().toString()
             val email = inputEmail.text.toString().trim()
             val senha = inputSenha.text.toString()
             val confirmarSenha = inputConfirmarSenha.text.toString()
@@ -134,12 +131,6 @@ object LoginScreen {
             if (nome.isEmpty()) {
                 Toast.makeText(context, "Digite seu nome completo.", Toast.LENGTH_SHORT).show()
                 inputNome.requestFocus()
-                return@criarBotao
-            }
-
-            if (matricula.isEmpty()) {
-                Toast.makeText(context, "Digite sua matrícula.", Toast.LENGTH_SHORT).show()
-                inputMatricula.requestFocus()
                 return@criarBotao
             }
 
