@@ -25,7 +25,11 @@ object EventCard {
     ) {
         fun dpToPx(dp: Int): Int = UIComponents.dpToPx(context, dp)
 
-        val card = UIComponents.criarCardView(context, 16f, 4f, 16, AppColors.COLOR_CARD_BG)
+        val card = UIComponents.criarCardView(context, 24f, 0f, 16, AppColors.COLOR_CARD_BG)
+        (card as? CardView)?.let {
+            it.cardElevation = dpToPx(2).toFloat()
+            it.background = UIComponents.criarShape(context, AppColors.COLOR_CARD_BG, AppColors.COLOR_STROKE, 1, 24f)
+        }
 
         val layoutInterno = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -52,33 +56,52 @@ object EventCard {
         }
         rowTop.addView(spacer)
 
-        val tvDataBadge = TextView(context).apply {
-            text = "📅 ${evento.dataBadge}"
-            textSize = 11f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.WHITE)
-            background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 8f)
-            setPadding(dpToPx(10), dpToPx(4), dpToPx(10), dpToPx(4))
+        val ivCalendar = android.widget.ImageView(context).apply {
+            setImageResource(context.resources.getIdentifier("ic_calendar", "drawable", context.packageName))
+            setColorFilter(AppColors.COLOR_PRIMARY)
+            layoutParams = LinearLayout.LayoutParams(dpToPx(14), dpToPx(14)).apply {
+                setMargins(0, 0, dpToPx(4), 0)
+            }
         }
-        rowTop.addView(tvDataBadge)
+        val rowDate = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY_LIGHT, Color.TRANSPARENT, 0, 12f)
+            setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4))
+        }
+        rowDate.addView(ivCalendar)
+        
+        val tvDataBadge = TextView(context).apply {
+            text = evento.dataBadge
+            textSize = 12f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(AppColors.COLOR_PRIMARY)
+        }
+        rowDate.addView(tvDataBadge)
+        rowTop.addView(rowDate)
 
-        val tvHeart = TextView(context).apply {
-            text = if (userRepo.isFavorito(evento.id)) " ❤️" else " 🤍"
-            textSize = 18f
-            setPadding(dpToPx(8), 0, 0, 0)
+        val ivHeart = android.widget.ImageView(context).apply {
+            val resName = if (userRepo.isFavorito(evento.id)) "ic_favorite" else "ic_favorite_border"
+            setImageResource(context.resources.getIdentifier(resName, "drawable", context.packageName))
+            setColorFilter(if (userRepo.isFavorito(evento.id)) Color.parseColor("#E11D48") else AppColors.COLOR_TEXT_MUTED)
+            layoutParams = LinearLayout.LayoutParams(dpToPx(24), dpToPx(24)).apply {
+                setMargins(dpToPx(12), 0, 0, 0)
+            }
             setOnClickListener {
                 if (userRepo.isFavorito(evento.id)) {
                     userRepo.removerFavorito(evento.id)
-                    text = " 🤍"
+                    setImageResource(context.resources.getIdentifier("ic_favorite_border", "drawable", context.packageName))
+                    setColorFilter(AppColors.COLOR_TEXT_MUTED)
                     Toast.makeText(context, "Removido dos favoritos.", Toast.LENGTH_SHORT).show()
                 } else {
                     userRepo.salvarFavorito(evento.id)
-                    text = " ❤️"
+                    setImageResource(context.resources.getIdentifier("ic_favorite", "drawable", context.packageName))
+                    setColorFilter(Color.parseColor("#E11D48"))
                     Toast.makeText(context, "Adicionado aos favoritos!", Toast.LENGTH_SHORT).show()
                 }
             }
         }
-        rowTop.addView(tvHeart)
+        rowTop.addView(ivHeart)
 
         layoutInterno.addView(rowTop)
 
@@ -98,17 +121,17 @@ object EventCard {
 
         if (evento.encerrado) {
             val tvEncerrado = TextView(context).apply {
-                text = "🏁 ENCERRADO"
+                text = "ENCERRADO"
                 textSize = 11f
                 typeface = Typeface.DEFAULT_BOLD
-                setTextColor(Color.parseColor("#475569"))
-                background = UIComponents.criarShape(context, Color.parseColor("#E2E8F0"), Color.TRANSPARENT, 0, 6f)
-                setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3))
+                setTextColor(AppColors.COLOR_ON_SURFACE_VARIANT)
+                background = UIComponents.criarShape(context, AppColors.COLOR_SURFACE_VARIANT, Color.TRANSPARENT, 0, 12f)
+                setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4))
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply {
-                    setMargins(0, dpToPx(2), dpToPx(6), dpToPx(6))
+                    setMargins(0, dpToPx(4), dpToPx(8), dpToPx(8))
                 }
             }
             rowBadges.addView(tvEncerrado)
@@ -116,17 +139,17 @@ object EventCard {
 
         if (userRepo.isInscrito(evento.id)) {
             val tvBadge = TextView(context).apply {
-                text = "✅ INSCRITO"
+                text = "INSCRITO"
                 textSize = 11f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(AppColors.COLOR_GREEN_TEXT)
-                background = UIComponents.criarShape(context, AppColors.COLOR_GREEN_BG, Color.TRANSPARENT, 0, 6f)
-                setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3))
+                background = UIComponents.criarShape(context, AppColors.COLOR_GREEN_BG, Color.TRANSPARENT, 0, 12f)
+                setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4))
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply {
-                    setMargins(0, dpToPx(2), dpToPx(6), dpToPx(6))
+                    setMargins(0, dpToPx(4), dpToPx(8), dpToPx(8))
                 }
             }
             rowBadges.addView(tvBadge)
@@ -134,37 +157,84 @@ object EventCard {
 
         val (media, total) = userRepo.getMediaAvaliacoes(evento.id)
         if (total > 0) {
-            val tvMedia = TextView(context).apply {
-                text = String.format(Locale.getDefault(), "⭐ %.1f (%d)", media, total)
-                textSize = 11f
-                typeface = Typeface.DEFAULT_BOLD
-                setTextColor(Color.parseColor("#D97706"))
-                background = UIComponents.criarShape(context, Color.parseColor("#FEF3C7"), Color.TRANSPARENT, 0, 6f)
-                setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3))
+            val rowRating = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                background = UIComponents.criarShape(context, Color.parseColor("#FFFBEB"), Color.parseColor("#FDE68A"), 1, 12f)
+                setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4))
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply {
-                    setMargins(0, dpToPx(2), 0, dpToPx(6))
+                    setMargins(0, dpToPx(4), 0, dpToPx(8))
                 }
             }
-            rowBadges.addView(tvMedia)
+            val ivStar = android.widget.ImageView(context).apply {
+                setImageResource(context.resources.getIdentifier("ic_star", "drawable", context.packageName))
+                setColorFilter(Color.parseColor("#D97706"))
+                layoutParams = LinearLayout.LayoutParams(dpToPx(14), dpToPx(14)).apply {
+                    setMargins(0, 0, dpToPx(4), 0)
+                }
+            }
+            val tvMedia = TextView(context).apply {
+                text = String.format(Locale.getDefault(), "%.1f (%d)", media, total)
+                textSize = 11f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(Color.parseColor("#D97706"))
+            }
+            rowRating.addView(ivStar)
+            rowRating.addView(tvMedia)
+            rowBadges.addView(rowRating)
         }
 
         layoutInterno.addView(rowBadges)
 
-        val tvInfo = TextView(context).apply {
-            val localTexto = if (evento.endereco.isNotEmpty()) {
-                "🕒 ${evento.horario}  •  📍 ${evento.local}\n🏠 ${evento.endereco}"
-            } else {
-                "🕒 ${evento.horario}  •  📍 ${evento.local}"
+        val rowInfo1 = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, 0, 0, dpToPx(4))
+        }
+        val ivTime = android.widget.ImageView(context).apply {
+            setImageResource(context.resources.getIdentifier("ic_time", "drawable", context.packageName))
+            setColorFilter(AppColors.COLOR_TEXT_MUTED)
+            layoutParams = LinearLayout.LayoutParams(dpToPx(16), dpToPx(16)).apply {
+                setMargins(0, 0, dpToPx(6), 0)
             }
-            text = localTexto
+        }
+        val tvHorario = TextView(context).apply {
+            text = evento.horario
             textSize = 13f
             setTextColor(AppColors.COLOR_TEXT_MUTED)
-            setPadding(0, dpToPx(2), 0, dpToPx(8))
         }
-        layoutInterno.addView(tvInfo)
+        rowInfo1.addView(ivTime)
+        rowInfo1.addView(tvHorario)
+        
+        val ivLocation = android.widget.ImageView(context).apply {
+            setImageResource(context.resources.getIdentifier("ic_location", "drawable", context.packageName))
+            setColorFilter(AppColors.COLOR_TEXT_MUTED)
+            layoutParams = LinearLayout.LayoutParams(dpToPx(16), dpToPx(16)).apply {
+                setMargins(dpToPx(16), 0, dpToPx(6), 0)
+            }
+        }
+        val tvLocal = TextView(context).apply {
+            text = evento.local
+            textSize = 13f
+            setTextColor(AppColors.COLOR_TEXT_MUTED)
+        }
+        rowInfo1.addView(ivLocation)
+        rowInfo1.addView(tvLocal)
+        
+        layoutInterno.addView(rowInfo1)
+
+        if (evento.endereco.isNotEmpty()) {
+            val tvEndereco = TextView(context).apply {
+                text = evento.endereco
+                textSize = 13f
+                setTextColor(AppColors.COLOR_TEXT_MUTED)
+                setPadding(dpToPx(22), 0, 0, dpToPx(8))
+            }
+            layoutInterno.addView(tvEndereco)
+        }
 
         val tvDesc = TextView(context).apply {
             text = evento.descricao

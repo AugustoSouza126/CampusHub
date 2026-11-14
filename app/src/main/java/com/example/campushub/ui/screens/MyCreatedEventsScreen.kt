@@ -63,11 +63,11 @@ object MyCreatedEventsScreen {
                         }
                         containerLista.addView(tvVazio)
 
-                        containerLista.addView(UIComponents.criarBotao(context, "➕ CRIAR NOVO EVENTO", primario = true) {
+                        containerLista.addView(UIComponents.criarBotao(context, "CRIAR NOVO EVENTO", primario = true) {
                             onCriarNovoEvento()
                         })
                     } else {
-                        containerLista.addView(UIComponents.criarBotao(context, "➕ CRIAR NOVO EVENTO", primario = true) {
+                        containerLista.addView(UIComponents.criarBotao(context, "CRIAR NOVO EVENTO", primario = true) {
                             onCriarNovoEvento()
                         })
 

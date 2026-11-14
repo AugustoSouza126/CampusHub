@@ -31,16 +31,16 @@ object HomeScreen {
         fun dpToPx(dp: Int): Int = UIComponents.dpToPx(context, dp)
 
         val nome = userRepo.getUsuarioNome()
-        val saudacao = if (nome.isNotEmpty()) "Olá, $nome! 👋" else "Olá! 👋"
+        val saudacao = if (nome.isNotEmpty()) "Olá, $nome!" else "Olá!"
 
         layout.addView(UIComponents.criarHeaderBar(context, saudacao, "Confira os eventos da universidade e garanta sua vaga."))
 
         if (userRepo.isOrganizador()) {
-            layout.addView(UIComponents.criarBotao(context, "➕ CRIAR NOVO EVENTO", primario = true) {
+            layout.addView(UIComponents.criarBotao(context, "CRIAR NOVO EVENTO", primario = true) {
                 onCriarNovoEvento()
             })
 
-            layout.addView(UIComponents.criarBotao(context, "📢 EVENTOS CRIADOS POR MIM", primario = false) {
+            layout.addView(UIComponents.criarBotao(context, "EVENTOS CRIADOS POR MIM", primario = false) {
                 onVerEventosCriados()
             })
         }
@@ -49,8 +49,8 @@ object HomeScreen {
         var situacaoSelecionada = "Todos"
         var categoriaSelecionada = "Todas"
 
-        layout.addView(UIComponents.criarRotulo(context, "Buscar por título"))
-        val inputBusca = UIComponents.criarCampoTexto(context, "🔎 Digite o título do evento...")
+        layout.addView(UIComponents.criarRotulo(context, "Pesquisar"))
+        val inputBusca = UIComponents.criarCampoTexto(context, "Digite o título do evento...")
         layout.addView(inputBusca)
 
         layout.addView(UIComponents.criarRotulo(context, "Situação do evento"))
@@ -138,10 +138,10 @@ object HomeScreen {
                 val opcao = opcoesSituacao[index]
                 val selecionado = (opcao == situacaoSelecionada)
                 if (selecionado) {
-                    btn.background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 10f)
+                    btn.background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 24f)
                     btn.setTextColor(Color.WHITE)
                 } else {
-                    btn.background = UIComponents.criarShape(context, Color.WHITE, AppColors.COLOR_STROKE, 1, 10f)
+                    btn.background = UIComponents.criarShape(context, Color.TRANSPARENT, AppColors.COLOR_STROKE, 1, 24f)
                     btn.setTextColor(AppColors.COLOR_TEXT_MUTED)
                 }
             }
@@ -154,7 +154,7 @@ object HomeScreen {
                 typeface = Typeface.DEFAULT_BOLD
                 isAllCaps = false
                 if (this is MaterialButton) {
-                    cornerRadius = dpToPx(10)
+                    cornerRadius = dpToPx(24)
                 }
                 backgroundTintList = null
                 setOnClickListener {
@@ -195,10 +195,10 @@ object HomeScreen {
                 val cat = categoriasOpcoes[index]
                 val selecionada = (cat == categoriaSelecionada)
                 if (selecionada) {
-                    btn.background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 20f)
+                    btn.background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 24f)
                     btn.setTextColor(Color.WHITE)
                 } else {
-                    btn.background = UIComponents.criarShape(context, Color.WHITE, AppColors.COLOR_STROKE, 1, 20f)
+                    btn.background = UIComponents.criarShape(context, Color.TRANSPARENT, AppColors.COLOR_STROKE, 1, 24f)
                     btn.setTextColor(AppColors.COLOR_TEXT_MUTED)
                 }
             }
@@ -211,7 +211,7 @@ object HomeScreen {
                 typeface = Typeface.DEFAULT_BOLD
                 isAllCaps = false
                 if (this is MaterialButton) {
-                    cornerRadius = dpToPx(20)
+                    cornerRadius = dpToPx(24)
                 }
                 backgroundTintList = null
                 setOnClickListener {

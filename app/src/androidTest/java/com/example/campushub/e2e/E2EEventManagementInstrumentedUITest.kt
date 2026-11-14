@@ -71,7 +71,7 @@ class E2EEventManagementInstrumentedUITest {
         } catch (_: Exception) {}
 
         try {
-            onView(firstView(withText("➕ CRIAR NOVO EVENTO")))
+            onView(firstView(withText("CRIAR NOVO EVENTO")))
                 .perform(click())
 
             Thread.sleep(1500)

@@ -170,7 +170,7 @@ object EventDetail {
                 weightSum = 3f
             }
 
-            val btnEditar = UIComponents.criarBotao(context, "✏️ EDITAR", primario = true) {
+            val btnEditar = UIComponents.criarBotao(context, "EDITAR", primario = true) {
                 onEditarEvento(evento)
             }.apply {
                 layoutParams = LinearLayout.LayoutParams(0, UIComponents.dpToPx(context, 42), 1f).apply {
@@ -180,7 +180,7 @@ object EventDetail {
             rowBotoesCriador.addView(btnEditar)
 
             if (!evento.encerrado) {
-                val btnEncerrar = UIComponents.criarBotao(context, "🏁 ENCERRAR", primario = false) {
+                val btnEncerrar = UIComponents.criarBotao(context, "ENCERRAR", primario = false) {
                     EventRepository.encerrarEvento(
                         evento.id,
                         onSuccess = {
@@ -199,7 +199,7 @@ object EventDetail {
                 rowBotoesCriador.addView(btnEncerrar)
             }
 
-            val btnExcluir = UIComponents.criarBotao(context, "🗑️ EXCLUIR", primario = false, perigo = true) {
+            val btnExcluir = UIComponents.criarBotao(context, "EXCLUIR", primario = false, perigo = true) {
                 EventRepository.deletarEvento(
                     evento.id,
                     onSuccess = {
@@ -232,13 +232,13 @@ object EventDetail {
 
         val eFavorito = userRepo.isFavorito(evento.id)
         if (eFavorito) {
-            layout.addView(UIComponents.criarBotao(context, "💔 DESFAVORITAR EVENTO", primario = false) {
+            layout.addView(UIComponents.criarBotao(context, "DESFAVORITAR EVENTO", primario = false) {
                 userRepo.removerFavorito(evento.id)
                 Toast.makeText(context, "Removido dos favoritos.", Toast.LENGTH_SHORT).show()
                 atualizarManterPosicao()
             })
         } else {
-            layout.addView(UIComponents.criarBotao(context, "❤️ FAVORITAR EVENTO", primario = false) {
+            layout.addView(UIComponents.criarBotao(context, "FAVORITAR EVENTO", primario = false) {
                 userRepo.salvarFavorito(evento.id)
                 Toast.makeText(context, "Adicionado aos favoritos!", Toast.LENGTH_SHORT).show()
                 atualizarManterPosicao()
@@ -249,7 +249,7 @@ object EventDetail {
             val inscrito = userRepo.isInscrito(evento.id)
             if (inscrito) {
                 val tvStatus = TextView(context).apply {
-                    text = "✅ Sua inscrição está confirmada neste evento."
+                    text = "Sua inscrição está confirmada neste evento."
                     textSize = 14f
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(AppColors.COLOR_GREEN_TEXT)
@@ -264,7 +264,7 @@ object EventDetail {
                 })
             } else if (evento.encerrado) {
                 val tvStatusEncerrado = TextView(context).apply {
-                    text = "🏁 Inscrições encerradas para este evento."
+                    text = "Inscrições encerradas para este evento."
                     textSize = 14f
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(Color.parseColor("#64748B"))
@@ -330,7 +330,7 @@ object EventDetail {
         }
 
         val tvAvaliacaoTitulo = TextView(context).apply {
-            text = "⭐ Avaliação do Evento"
+            text = "Avaliação do Evento"
             textSize = 18f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(AppColors.COLOR_TEXT_MAIN)
@@ -341,7 +341,7 @@ object EventDetail {
         val (mediaNotas, totalAvaliacoes) = userRepo.getMediaAvaliacoes(evento.id)
         val tvMediaTexto = TextView(context).apply {
             text = if (totalAvaliacoes > 0) {
-                String.format(Locale.getDefault(), "Média do Evento: ⭐ %.1f / 5.0 (%d avaliações)", mediaNotas, totalAvaliacoes)
+                String.format(Locale.getDefault(), "Média do Evento: %.1f / 5.0 (%d avaliações)", mediaNotas, totalAvaliacoes)
             } else {
                 "Este evento ainda não possui avaliações."
             }
@@ -353,7 +353,7 @@ object EventDetail {
 
         if (!evento.encerrado) {
             val tvInfoNaoEncerrado = TextView(context).apply {
-                text = "ℹ️ A avaliação por estrelas estará disponível assim que o evento for encerrado."
+                text = "A avaliação por estrelas estará disponível assim que o evento for encerrado."
                 textSize = 13f
                 setTextColor(AppColors.COLOR_TEXT_MUTED)
                 setPadding(0, UIComponents.dpToPx(context, 4), 0, UIComponents.dpToPx(context, 4))
@@ -361,7 +361,7 @@ object EventDetail {
             layoutAvaliacao.addView(tvInfoNaoEncerrado)
         } else if (!inscrito) {
             val tvInfoNaoInscrito = TextView(context).apply {
-                text = "⚠️ Apenas alunos inscritos neste evento podem avaliá-lo."
+                text = "Apenas alunos inscritos neste evento podem avaliá-lo."
                 textSize = 13f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(Color.parseColor("#D97706"))
@@ -371,7 +371,7 @@ object EventDetail {
         } else {
             val notaAtual = userRepo.getAvaliacaoDoUsuario(evento.id)
             val tvSuaNota = TextView(context).apply {
-                text = if (notaAtual != null) "Sua nota atual: ⭐ $notaAtual / 5 (Clique abaixo para alterar)" else "Clique para atribuir sua nota (1 a 5 estrelas):"
+                text = if (notaAtual != null) "Sua nota atual: $notaAtual / 5 (Clique abaixo para alterar)" else "Clique para atribuir sua nota (1 a 5 estrelas):"
                 textSize = 14f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(AppColors.COLOR_TEXT_MAIN)
@@ -387,12 +387,12 @@ object EventDetail {
             for (i in 1..5) {
                 val ehNotaSelecionada = (notaAtual == i)
                 val btnEstrela = UIComponents.criarButtonInstance(context).apply {
-                    text = "⭐ $i"
+                    text = "$i Estrela${if(i>1)"s" else ""}"
                     textSize = 13f
                     typeface = Typeface.DEFAULT_BOLD
                     isAllCaps = false
                     if (this is MaterialButton) {
-                        cornerRadius = UIComponents.dpToPx(context, 10)
+                        cornerRadius = UIComponents.dpToPx(context, 24)
                         strokeColor = android.content.res.ColorStateList.valueOf(Color.parseColor("#FCD34D"))
                         strokeWidth = UIComponents.dpToPx(context, 1)
                     }
@@ -452,7 +452,7 @@ object EventDetail {
         }
 
         val tvComentariosTitulo = TextView(context).apply {
-            text = "💬 Comentários"
+            text = "Comentários"
             textSize = 18f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(AppColors.COLOR_TEXT_MAIN)
@@ -523,7 +523,7 @@ object EventDetail {
                 }
 
                 val tvAutor = TextView(context).apply {
-                    text = "👤 ${com.autorNome}"
+            text = com.autorNome
                     textSize = 14f
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(AppColors.COLOR_TEXT_MAIN)
@@ -602,7 +602,7 @@ object EventDetail {
                     }
 
                     val btnEditar = TextView(context).apply {
-                        text = "✏️ Editar"
+                        text = "Editar"
                         textSize = 12f
                         typeface = Typeface.DEFAULT_BOLD
                         setTextColor(AppColors.COLOR_TEXT_MAIN)
@@ -626,7 +626,7 @@ object EventDetail {
                     rowAcoes.addView(btnEditar)
 
                     val btnExcluir = TextView(context).apply {
-                        text = "🗑️ Excluir"
+                        text = "Excluir"
                         textSize = 12f
                         typeface = Typeface.DEFAULT_BOLD
                         setTextColor(Color.parseColor("#DC2626"))

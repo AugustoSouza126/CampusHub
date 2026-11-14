@@ -107,7 +107,7 @@ class E2EUserEnrollmentInstrumentedUITest {
             } catch (_: Exception) {}
 
             try {
-                onView(withText("❤️ FAVORITAR EVENTO"))
+                onView(withText("FAVORITAR EVENTO"))
                     .perform(click())
                 Thread.sleep(1500)
             } catch (_: Exception) {}

@@ -30,20 +30,51 @@ object EventMediaComponent {
     ) {
         val inscrito = userRepo.isInscrito(evento.id)
 
-        val cardFotos = UIComponents.criarCardView(context, 16f, 4f, 16, AppColors.COLOR_CARD_BG)
+        val cardFotos = UIComponents.criarCardView(context, 16f, 0f, 16, AppColors.COLOR_CARD_BG)
+        (cardFotos as? CardView)?.background = UIComponents.criarShape(context, AppColors.COLOR_CARD_BG, AppColors.COLOR_STROKE, 1, 16f)
 
         val layoutFotos = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
         }
 
+        val headerRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, UIComponents.dpToPx(context, 8), 0, UIComponents.dpToPx(context, 8))
+        }
+
         val tvTitulo = TextView(context).apply {
-            text = "📷 Fotos do Evento"
-            textSize = 18f
+            text = "Fotos do Evento"
+            textSize = 16f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(AppColors.COLOR_TEXT_MAIN)
-            setPadding(0, 0, 0, UIComponents.dpToPx(context, 4))
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
-        layoutFotos.addView(tvTitulo)
+        headerRow.addView(tvTitulo)
+
+        val ivToggle = ImageView(context).apply {
+            setImageResource(context.resources.getIdentifier("ic_arrow_back", "drawable", context.packageName)) // Placeholder, needs rotation
+            rotation = -90f // point down
+            setColorFilter(AppColors.COLOR_TEXT_MAIN)
+            layoutParams = LinearLayout.LayoutParams(UIComponents.dpToPx(context, 24), UIComponents.dpToPx(context, 24))
+        }
+        headerRow.addView(ivToggle)
+        layoutFotos.addView(headerRow)
+
+        val contentLayout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        
+        headerRow.setOnClickListener {
+            if (contentLayout.visibility == View.GONE) {
+                contentLayout.visibility = View.VISIBLE
+                ivToggle.rotation = 90f // point up
+            } else {
+                contentLayout.visibility = View.GONE
+                ivToggle.rotation = -90f // point down
+            }
+        }
 
         val tvSub = TextView(context).apply {
             text = "Fotos publicadas pelos alunos participantes deste evento (Clique na foto para expandir)."
@@ -51,7 +82,7 @@ object EventMediaComponent {
             setTextColor(AppColors.COLOR_TEXT_MUTED)
             setPadding(0, 0, 0, UIComponents.dpToPx(context, 10))
         }
-        layoutFotos.addView(tvSub)
+        contentLayout.addView(tvSub)
 
         if (inscrito) {
             val rowBotoesFoto = LinearLayout(context).apply {
@@ -77,16 +108,16 @@ object EventMediaComponent {
             }
             rowBotoesFoto.addView(btnGaleria)
 
-            layoutFotos.addView(rowBotoesFoto)
+            contentLayout.addView(rowBotoesFoto)
         } else {
             val tvInfoNaoInscrito = TextView(context).apply {
-                text = "⚠️ Inscreva-se neste evento para poder tirar e enviar fotos."
+                text = "Inscreva-se neste evento para poder tirar e enviar fotos."
                 textSize = 13f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(Color.parseColor("#D97706"))
                 setPadding(0, 0, 0, UIComponents.dpToPx(context, 8))
             }
-            layoutFotos.addView(tvInfoNaoInscrito)
+            contentLayout.addView(tvInfoNaoInscrito)
         }
 
         val fotosLista = userRepo.getFotosDoEvento(evento.id)
@@ -99,7 +130,7 @@ object EventMediaComponent {
                 setPadding(0, UIComponents.dpToPx(context, 16), 0, UIComponents.dpToPx(context, 8))
                 gravity = Gravity.CENTER
             }
-            layoutFotos.addView(tvSemFotos)
+            contentLayout.addView(tvSemFotos)
         } else {
             val scrollHorizontal = HorizontalScrollView(context).apply {
                 isHorizontalScrollBarEnabled = false
@@ -199,9 +230,10 @@ object EventMediaComponent {
             }
 
             scrollHorizontal.addView(rowGaleria)
-            layoutFotos.addView(scrollHorizontal)
+            contentLayout.addView(scrollHorizontal)
         }
 
+        layoutFotos.addView(contentLayout)
         cardFotos.addView(layoutFotos)
 
         val paramsCardFotos = LinearLayout.LayoutParams(
@@ -254,7 +286,7 @@ object EventMediaComponent {
         }
         containerDialog.addView(tvInfo)
 
-        val btnFechar = UIComponents.criarBotao(context, "❌ FECHAR FOTO", primario = true) {
+        val btnFechar = UIComponents.criarBotao(context, "FECHAR FOTO", primario = true) {
             dialog.dismiss()
         }
         containerDialog.addView(btnFechar)
@@ -274,20 +306,51 @@ object EventMediaComponent {
     ) {
         val inscrito = userRepo.isInscrito(evento.id)
 
-        val cardVideos = UIComponents.criarCardView(context, 16f, 4f, 16, AppColors.COLOR_CARD_BG)
+        val cardVideos = UIComponents.criarCardView(context, 16f, 0f, 16, AppColors.COLOR_CARD_BG)
+        (cardVideos as? CardView)?.background = UIComponents.criarShape(context, AppColors.COLOR_CARD_BG, AppColors.COLOR_STROKE, 1, 16f)
 
         val layoutVideos = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
         }
 
+        val headerRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, UIComponents.dpToPx(context, 8), 0, UIComponents.dpToPx(context, 8))
+        }
+
         val tvTitulo = TextView(context).apply {
-            text = "🎬 Vídeos do Evento"
-            textSize = 18f
+            text = "Vídeos do Evento"
+            textSize = 16f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(AppColors.COLOR_TEXT_MAIN)
-            setPadding(0, 0, 0, UIComponents.dpToPx(context, 4))
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
-        layoutVideos.addView(tvTitulo)
+        headerRow.addView(tvTitulo)
+
+        val ivToggle = ImageView(context).apply {
+            setImageResource(context.resources.getIdentifier("ic_arrow_back", "drawable", context.packageName))
+            rotation = -90f
+            setColorFilter(AppColors.COLOR_TEXT_MAIN)
+            layoutParams = LinearLayout.LayoutParams(UIComponents.dpToPx(context, 24), UIComponents.dpToPx(context, 24))
+        }
+        headerRow.addView(ivToggle)
+        layoutVideos.addView(headerRow)
+
+        val contentLayout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        
+        headerRow.setOnClickListener {
+            if (contentLayout.visibility == View.GONE) {
+                contentLayout.visibility = View.VISIBLE
+                ivToggle.rotation = 90f
+            } else {
+                contentLayout.visibility = View.GONE
+                ivToggle.rotation = -90f
+            }
+        }
 
         val tvSub = TextView(context).apply {
             text = "Grave um vídeo curto ou selecione da galeria para publicar no evento (Clique para assistir)."
@@ -295,7 +358,7 @@ object EventMediaComponent {
             setTextColor(AppColors.COLOR_TEXT_MUTED)
             setPadding(0, 0, 0, UIComponents.dpToPx(context, 10))
         }
-        layoutVideos.addView(tvSub)
+        contentLayout.addView(tvSub)
 
         if (inscrito) {
             val rowBotoesVideo = LinearLayout(context).apply {
@@ -321,16 +384,16 @@ object EventMediaComponent {
             }
             rowBotoesVideo.addView(btnGaleria)
 
-            layoutVideos.addView(rowBotoesVideo)
+            contentLayout.addView(rowBotoesVideo)
         } else {
             val tvInfoNaoInscrito = TextView(context).apply {
-                text = "⚠️ Inscreva-se neste evento para poder gravar e enviar vídeos."
+                text = "Inscreva-se neste evento para poder gravar e enviar vídeos."
                 textSize = 13f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(Color.parseColor("#D97706"))
                 setPadding(0, 0, 0, UIComponents.dpToPx(context, 8))
             }
-            layoutVideos.addView(tvInfoNaoInscrito)
+            contentLayout.addView(tvInfoNaoInscrito)
         }
 
         val videosLista = userRepo.getVideosDoEvento(evento.id)
@@ -343,7 +406,7 @@ object EventMediaComponent {
                 setPadding(0, UIComponents.dpToPx(context, 16), 0, UIComponents.dpToPx(context, 8))
                 gravity = Gravity.CENTER
             }
-            layoutVideos.addView(tvSemVideos)
+            contentLayout.addView(tvSemVideos)
         } else {
             val scrollHorizontal = HorizontalScrollView(context).apply {
                 isHorizontalScrollBarEnabled = false
@@ -385,7 +448,7 @@ object EventMediaComponent {
                         )
                     }
 
-                    val btnAssistir = UIComponents.criarBotao(context, "▶️ ASSISTIR VÍDEO", primario = true) {
+                    val btnAssistir = UIComponents.criarBotao(context, "ASSISTIR VÍDEO", primario = true) {
                         MediaHelper.abrirPlayerVideoDialog(context, video.caminhoArquivo, "Vídeo por ${video.autorNome}")
                     }.apply {
                         layoutParams = LinearLayout.LayoutParams(
@@ -436,9 +499,10 @@ object EventMediaComponent {
             }
 
             scrollHorizontal.addView(rowGaleria)
-            layoutVideos.addView(scrollHorizontal)
+            contentLayout.addView(scrollHorizontal)
         }
 
+        layoutVideos.addView(contentLayout)
         cardVideos.addView(layoutVideos)
 
         val paramsCardVideos = LinearLayout.LayoutParams(
@@ -461,20 +525,51 @@ object EventMediaComponent {
     ) {
         val inscrito = userRepo.isInscrito(evento.id)
 
-        val cardAudios = UIComponents.criarCardView(context, 16f, 4f, 16, AppColors.COLOR_CARD_BG)
+        val cardAudios = UIComponents.criarCardView(context, 16f, 0f, 16, AppColors.COLOR_CARD_BG)
+        (cardAudios as? CardView)?.background = UIComponents.criarShape(context, AppColors.COLOR_CARD_BG, AppColors.COLOR_STROKE, 1, 16f)
 
         val layoutAudios = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
         }
 
+        val headerRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, UIComponents.dpToPx(context, 8), 0, UIComponents.dpToPx(context, 8))
+        }
+
         val tvTitulo = TextView(context).apply {
-            text = "🎙️ Áudios do Evento"
-            textSize = 18f
+            text = "Áudios do Evento"
+            textSize = 16f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(AppColors.COLOR_TEXT_MAIN)
-            setPadding(0, 0, 0, UIComponents.dpToPx(context, 4))
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
-        layoutAudios.addView(tvTitulo)
+        headerRow.addView(tvTitulo)
+
+        val ivToggle = ImageView(context).apply {
+            setImageResource(context.resources.getIdentifier("ic_arrow_back", "drawable", context.packageName))
+            rotation = -90f
+            setColorFilter(AppColors.COLOR_TEXT_MAIN)
+            layoutParams = LinearLayout.LayoutParams(UIComponents.dpToPx(context, 24), UIComponents.dpToPx(context, 24))
+        }
+        headerRow.addView(ivToggle)
+        layoutAudios.addView(headerRow)
+
+        val contentLayout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        
+        headerRow.setOnClickListener {
+            if (contentLayout.visibility == View.GONE) {
+                contentLayout.visibility = View.VISIBLE
+                ivToggle.rotation = 90f
+            } else {
+                contentLayout.visibility = View.GONE
+                ivToggle.rotation = -90f
+            }
+        }
 
         val tvSub = TextView(context).apply {
             text = "Grave um áudio curto sobre o evento, reproduza ou exclua seus próprios áudios."
@@ -482,7 +577,7 @@ object EventMediaComponent {
             setTextColor(AppColors.COLOR_TEXT_MUTED)
             setPadding(0, 0, 0, UIComponents.dpToPx(context, 10))
         }
-        layoutAudios.addView(tvSub)
+        contentLayout.addView(tvSub)
 
         if (inscrito) {
             val temPermissaoAudio = ContextCompat.checkSelfPermission(
@@ -525,17 +620,17 @@ object EventMediaComponent {
                         onAtualizarTela()
                     }
                 }
-                layoutAudios.addView(btnGravar)
+                contentLayout.addView(btnGravar)
             }
         } else {
             val tvInfoNaoInscrito = TextView(context).apply {
-                text = "⚠️ Inscreva-se neste evento para poder gravar e enviar áudios."
+                text = "Inscreva-se neste evento para poder gravar e enviar áudios."
                 textSize = 13f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(Color.parseColor("#D97706"))
                 setPadding(0, 0, 0, UIComponents.dpToPx(context, 8))
             }
-            layoutAudios.addView(tvInfoNaoInscrito)
+            contentLayout.addView(tvInfoNaoInscrito)
         }
 
         val audiosLista = userRepo.getAudiosDoEvento(evento.id)
@@ -548,7 +643,7 @@ object EventMediaComponent {
                 setPadding(0, UIComponents.dpToPx(context, 16), 0, UIComponents.dpToPx(context, 8))
                 gravity = Gravity.CENTER
             }
-            layoutAudios.addView(tvSemAudios)
+            contentLayout.addView(tvSemAudios)
         } else {
             val divisor = View(context).apply {
                 layoutParams = LinearLayout.LayoutParams(
@@ -598,7 +693,7 @@ object EventMediaComponent {
                 itemLayout.addView(rowHeader)
 
                 var tocando = false
-                val btnPlay = UIComponents.criarBotao(context, "▶️ OUVIR ÁUDIO", primario = false) {
+                val btnPlay = UIComponents.criarBotao(context, "OUVIR ÁUDIO", primario = false) {
                     if (tocando) {
                         MediaHelper.pararAudio()
                         tocando = false
@@ -622,7 +717,7 @@ object EventMediaComponent {
 
                 if (audio.autorEmail.equals(usuarioEmailAtual, ignoreCase = true) && usuarioEmailAtual.isNotEmpty()) {
                     val btnExcluir = TextView(context).apply {
-                        text = "🗑️ Excluir meu áudio"
+                        text = "Excluir meu áudio"
                         textSize = 12f
                         typeface = Typeface.DEFAULT_BOLD
                         setTextColor(Color.parseColor("#DC2626"))
@@ -647,10 +742,11 @@ object EventMediaComponent {
                     setMargins(0, UIComponents.dpToPx(context, 4), 0, UIComponents.dpToPx(context, 6))
                 }
 
-                layoutAudios.addView(cardItem, paramsItem)
+                contentLayout.addView(cardItem, paramsItem)
             }
         }
 
+        layoutAudios.addView(contentLayout)
         cardAudios.addView(layoutAudios)
 
         val paramsCardAudios = LinearLayout.LayoutParams(

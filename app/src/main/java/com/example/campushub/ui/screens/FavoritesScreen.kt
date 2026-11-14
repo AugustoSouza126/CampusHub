@@ -39,7 +39,7 @@ object FavoritesScreen {
 
                 if (favoritosLista.isEmpty()) {
                     val tvVazio = TextView(context).apply {
-                        text = "Você ainda não favoritou nenhum evento.\nClique no ❤️ dos eventos para salvar aqui!"
+                        text = "Você ainda não favoritou nenhum evento.\nClique no botão de favoritos dos eventos para salvar aqui!"
                         textSize = 15f
                         setTextColor(AppColors.COLOR_TEXT_MUTED)
                         setPadding(0, dpToPx(30), 0, dpToPx(20))

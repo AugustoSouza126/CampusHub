@@ -131,10 +131,13 @@ object UIComponents {
             backgroundTintList = null
 
             if (perigo) {
-                background = criarShape(context, Color.parseColor("#FEF2F2"), Color.parseColor("#EF4444"), 1, 12f)
-                setTextColor(Color.parseColor("#DC2626"))
+                background = criarShape(context, Color.parseColor("#FFDAD6"), Color.TRANSPARENT, 0, 24f)
+                setTextColor(Color.parseColor("#BA1A1A"))
+            } else if (!primario) {
+                background = criarShape(context, Color.TRANSPARENT, AppColors.COLOR_STROKE, 1, 24f)
+                setTextColor(AppColors.COLOR_PRIMARY)
             } else {
-                background = criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 12f)
+                background = criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 24f)
                 setTextColor(Color.WHITE)
             }
 
@@ -156,57 +159,44 @@ object UIComponents {
         val header = LinearLayout(context).apply {
             tag = "HEADER_BAR"
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(AppColors.COLOR_PRIMARY)
-            setPadding(dpToPx(context, 20), dpToPx(context, 48), dpToPx(context, 20), dpToPx(context, 20))
+            setBackgroundColor(AppColors.COLOR_CARD_BG)
+            setPadding(dpToPx(context, 16), dpToPx(context, 16), dpToPx(context, 16), dpToPx(context, 16))
+            elevation = dpToPx(context, 2).toFloat()
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(0, 0, 0, dpToPx(context, 16))
+                setMargins(0, 0, 0, dpToPx(context, 8))
             }
         }
 
         val rowTop = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(0, 0, 0, dpToPx(context, 6))
         }
 
         if (onVoltar != null) {
-            val btnVoltarCirculo = FrameLayout(context).apply {
-                background = criarShape(context, Color.WHITE, Color.TRANSPARENT, 0, 20f)
-                elevation = dpToPx(context, 4).toFloat()
+            val btnVoltar = ImageView(context).apply {
+                setImageResource(context.resources.getIdentifier("ic_arrow_back", "drawable", context.packageName))
+                setColorFilter(AppColors.COLOR_TEXT_MAIN)
+                setPadding(dpToPx(context, 8), dpToPx(context, 8), dpToPx(context, 8), dpToPx(context, 8))
                 layoutParams = LinearLayout.LayoutParams(
-                    dpToPx(context, 38),
-                    dpToPx(context, 38)
+                    dpToPx(context, 40),
+                    dpToPx(context, 40)
                 ).apply {
-                    setMargins(0, 0, dpToPx(context, 12), 0)
+                    setMargins(0, 0, dpToPx(context, 8), 0)
                 }
+                background = criarShape(context, Color.TRANSPARENT, Color.TRANSPARENT, 0, 20f)
                 setOnClickListener { onVoltar() }
             }
-
-            val tvArrow = TextView(context).apply {
-                text = "‹"
-                textSize = 26f
-                typeface = Typeface.DEFAULT_BOLD
-                setTextColor(AppColors.COLOR_TEXT_MAIN)
-                includeFontPadding = false
-                gravity = Gravity.CENTER
-                layoutParams = FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.WRAP_CONTENT,
-                    FrameLayout.LayoutParams.WRAP_CONTENT,
-                    Gravity.CENTER
-                )
-            }
-            btnVoltarCirculo.addView(tvArrow)
-            rowTop.addView(btnVoltarCirculo)
+            rowTop.addView(btnVoltar)
         }
 
         val tvLogo = TextView(context).apply {
-            text = "🎓 CampusHub"
-            textSize = 13f
+            text = "CampusHub"
+            textSize = 18f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.WHITE)
+            setTextColor(AppColors.COLOR_PRIMARY)
         }
         rowTop.addView(tvLogo)
 
@@ -214,9 +204,10 @@ object UIComponents {
 
         val tvTitulo = TextView(context).apply {
             text = titulo
-            textSize = 22f
+            textSize = 24f
             typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.WHITE)
+            setTextColor(AppColors.COLOR_TEXT_MAIN)
+            setPadding(0, dpToPx(context, 12), 0, 0)
         }
         header.addView(tvTitulo)
 
@@ -224,7 +215,7 @@ object UIComponents {
             val tvSub = TextView(context).apply {
                 text = subtitulo
                 textSize = 14f
-                setTextColor(Color.WHITE)
+                setTextColor(AppColors.COLOR_TEXT_MUTED)
                 setPadding(0, dpToPx(context, 4), 0, 0)
             }
             header.addView(tvSub)
@@ -246,7 +237,7 @@ object UIComponents {
             weightSum = 4f
         }
 
-        fun criarItemNav(icone: String, rotulo: String, abaId: String) {
+        fun criarItemNav(iconeRes: String, rotulo: String, abaId: String) {
             val ehAtivo = (abaId == abaAtiva)
 
             val item = LinearLayout(context).apply {
@@ -263,18 +254,34 @@ object UIComponents {
                 )
             }
 
-            val tvIcone = TextView(context).apply {
-                text = icone
-                textSize = 18f
-                gravity = Gravity.CENTER
+            val iconContainer = FrameLayout(context).apply {
+                if (ehAtivo) {
+                    background = criarShape(context, AppColors.COLOR_PRIMARY_LIGHT, Color.TRANSPARENT, 0, 16f)
+                }
+                setPadding(dpToPx(context, 16), dpToPx(context, 4), dpToPx(context, 16), dpToPx(context, 4))
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, 0, 0, dpToPx(context, 4))
+                }
             }
-            item.addView(tvIcone)
+
+            val ivIcone = ImageView(context).apply {
+                val resId = context.resources.getIdentifier(iconeRes, "drawable", context.packageName)
+                setImageResource(resId)
+                val iconColor = if (ehAtivo) AppColors.COLOR_TEXT_MAIN else AppColors.COLOR_TEXT_MUTED
+                setColorFilter(iconColor)
+                layoutParams = FrameLayout.LayoutParams(dpToPx(context, 24), dpToPx(context, 24), Gravity.CENTER)
+            }
+            iconContainer.addView(ivIcone)
+            item.addView(iconContainer)
 
             val tvTexto = TextView(context).apply {
                 text = rotulo
-                textSize = 11f
+                textSize = 12f
                 typeface = if (ehAtivo) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
-                setTextColor(if (ehAtivo) AppColors.COLOR_PRIMARY else AppColors.COLOR_TEXT_MUTED)
+                setTextColor(if (ehAtivo) AppColors.COLOR_TEXT_MAIN else AppColors.COLOR_TEXT_MUTED)
                 gravity = Gravity.CENTER
             }
             item.addView(tvTexto)
@@ -282,10 +289,10 @@ object UIComponents {
             navContainer.addView(item)
         }
 
-        criarItemNav("🏠", "Início", "HOME")
-        criarItemNav("❤️", "Favoritos", "FAVORITOS")
-        criarItemNav("📅", "Inscrições", "MEUS_EVENTOS")
-        criarItemNav("👤", "Perfil", "PERFIL")
+        criarItemNav("ic_home", "Início", "HOME")
+        criarItemNav("ic_favorite", "Favoritos", "FAVORITOS")
+        criarItemNav("ic_calendar", "Inscrições", "MEUS_EVENTOS")
+        criarItemNav("ic_person", "Perfil", "PERFIL")
 
         return navContainer
     }

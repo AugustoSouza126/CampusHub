@@ -216,7 +216,7 @@ object MediaHelper {
         }
         containerDialog.addView(videoView)
 
-        val btnFechar = UIComponents.criarBotao(context, "❌ FECHAR VÍDEO", primario = true) {
+        val btnFechar = UIComponents.criarBotao(context, "FECHAR VÍDEO", primario = true) {
             videoView.stopPlayback()
             dialog.dismiss()
         }

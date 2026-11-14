@@ -32,9 +32,9 @@ object ProfileScreen {
             orientation = LinearLayout.VERTICAL
         }
 
-        fun criarCampoPerfilView(icone: String, rotulo: String, valor: String) {
+        fun criarCampoPerfilView(rotulo: String, valor: String) {
             val tvRotulo = TextView(context).apply {
-                text = "$icone  $rotulo"
+                text = rotulo
                 textSize = 12f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(AppColors.COLOR_TEXT_MUTED)
@@ -52,9 +52,9 @@ object ProfileScreen {
             innerPerfil.addView(tvValor)
         }
 
-        criarCampoPerfilView("👤", "Nome Completo", userRepo.getUsuarioNome())
-        criarCampoPerfilView("📄", "Matrícula", userRepo.getUsuarioMatricula())
-        criarCampoPerfilView("✉️", "E-mail Institucional", userRepo.getUsuarioEmail())
+        criarCampoPerfilView("Nome Completo", userRepo.getUsuarioNome())
+        criarCampoPerfilView("Matrícula", userRepo.getUsuarioMatricula())
+        criarCampoPerfilView("E-mail Institucional", userRepo.getUsuarioEmail())
 
         cardPerfil.addView(innerPerfil)
 
@@ -71,7 +71,7 @@ object ProfileScreen {
             onEditarPerfil()
         })
 
-        layout.addView(UIComponents.criarBotao(context, "📢 EVENTOS CRIADOS POR MIM", primario = false) {
+        layout.addView(UIComponents.criarBotao(context, "EVENTOS CRIADOS POR MIM", primario = false) {
             onVerEventosCriados()
         })
 
