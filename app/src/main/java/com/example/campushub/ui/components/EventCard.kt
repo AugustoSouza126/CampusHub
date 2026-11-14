@@ -25,10 +25,10 @@ object EventCard {
     ) {
         fun dpToPx(dp: Int): Int = UIComponents.dpToPx(context, dp)
 
-        val card = UIComponents.criarCardView(context, 24f, 0f, 16, AppColors.COLOR_CARD_BG)
+        val card = UIComponents.criarCardView(context, 10f, 0f, 16, AppColors.COLOR_CARD_BG)
         (card as? CardView)?.let {
-            it.cardElevation = dpToPx(2).toFloat()
-            it.background = UIComponents.criarShape(context, AppColors.COLOR_CARD_BG, AppColors.COLOR_STROKE, 1, 24f)
+            it.cardElevation = dpToPx(1).toFloat()
+            it.background = UIComponents.criarShape(context, AppColors.COLOR_CARD_BG, AppColors.COLOR_STROKE, 1, 10f)
         }
 
         val layoutInterno = LinearLayout(context).apply {
@@ -46,8 +46,8 @@ object EventCard {
             textSize = 11f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(AppColors.COLOR_CHIP_TEXT)
-            background = UIComponents.criarShape(context, AppColors.COLOR_CHIP_BG, Color.TRANSPARENT, 0, 8f)
-            setPadding(dpToPx(10), dpToPx(4), dpToPx(10), dpToPx(4))
+            background = UIComponents.criarShape(context, AppColors.COLOR_CHIP_BG, Color.TRANSPARENT, 0, 6f)
+            setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3))
         }
         rowTop.addView(tvCategoria)
 
@@ -66,8 +66,8 @@ object EventCard {
         val rowDate = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY_LIGHT, Color.TRANSPARENT, 0, 12f)
-            setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4))
+            background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY_LIGHT, Color.TRANSPARENT, 0, 6f)
+            setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3))
         }
         rowDate.addView(ivCalendar)
         
@@ -88,6 +88,9 @@ object EventCard {
                 setMargins(dpToPx(12), 0, 0, 0)
             }
             setOnClickListener {
+                animate().scaleX(1.3f).scaleY(1.3f).setDuration(120).withEndAction {
+                    animate().scaleX(1.0f).scaleY(1.0f).setDuration(120).start()
+                }.start()
                 if (userRepo.isFavorito(evento.id)) {
                     userRepo.removerFavorito(evento.id)
                     setImageResource(context.resources.getIdentifier("ic_favorite_border", "drawable", context.packageName))
@@ -125,8 +128,8 @@ object EventCard {
                 textSize = 11f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(AppColors.COLOR_ON_SURFACE_VARIANT)
-                background = UIComponents.criarShape(context, AppColors.COLOR_SURFACE_VARIANT, Color.TRANSPARENT, 0, 12f)
-                setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4))
+                background = UIComponents.criarShape(context, AppColors.COLOR_SURFACE_VARIANT, Color.TRANSPARENT, 0, 6f)
+                setPadding(dpToPx(6), dpToPx(2), dpToPx(6), dpToPx(2))
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
@@ -143,8 +146,8 @@ object EventCard {
                 textSize = 11f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(AppColors.COLOR_GREEN_TEXT)
-                background = UIComponents.criarShape(context, AppColors.COLOR_GREEN_BG, Color.TRANSPARENT, 0, 12f)
-                setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4))
+                background = UIComponents.criarShape(context, AppColors.COLOR_GREEN_BG, Color.TRANSPARENT, 0, 6f)
+                setPadding(dpToPx(6), dpToPx(2), dpToPx(6), dpToPx(2))
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
@@ -160,8 +163,8 @@ object EventCard {
             val rowRating = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
-                background = UIComponents.criarShape(context, Color.parseColor("#FFFBEB"), Color.parseColor("#FDE68A"), 1, 12f)
-                setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4))
+                background = UIComponents.criarShape(context, Color.parseColor("#FEF3C7"), Color.parseColor("#FDE68A"), 1, 6f)
+                setPadding(dpToPx(6), dpToPx(2), dpToPx(6), dpToPx(2))
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
@@ -259,5 +262,13 @@ object EventCard {
         }
 
         parent.addView(card, params)
+
+        card.alpha = 0f
+        card.translationY = 40f
+        card.animate()
+            .alpha(1f)
+            .translationY(0f)
+            .setDuration(280)
+            .start()
     }
 }

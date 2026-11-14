@@ -15,18 +15,18 @@ class AppColorsTest {
 
     @Test
     fun testAppColorsHexadecimalValues() {
-        assertEquals(Color.parseColor("#1E40AF"), AppColors.COLOR_PRIMARY)
-        assertEquals(Color.parseColor("#2563EB"), AppColors.COLOR_PRIMARY_LIGHT)
-        assertEquals(Color.parseColor("#3B82F6"), AppColors.COLOR_ACCENT)
-        assertEquals(Color.parseColor("#F1F5F9"), AppColors.COLOR_BG)
+        assertEquals(Color.parseColor("#1D4ED8"), AppColors.COLOR_PRIMARY)
+        assertEquals(Color.parseColor("#EFF6FF"), AppColors.COLOR_PRIMARY_LIGHT)
+        assertEquals(Color.parseColor("#1D4ED8"), AppColors.COLOR_ACCENT)
+        assertEquals(Color.parseColor("#F8FAFC"), AppColors.COLOR_BG)
         assertEquals(Color.parseColor("#FFFFFF"), AppColors.COLOR_CARD_BG)
-        assertEquals(Color.parseColor("#CBD5E1"), AppColors.COLOR_STROKE)
+        assertEquals(Color.parseColor("#E2E8F0"), AppColors.COLOR_STROKE)
         assertEquals(Color.parseColor("#0F172A"), AppColors.COLOR_TEXT_MAIN)
         assertEquals(Color.parseColor("#64748B"), AppColors.COLOR_TEXT_MUTED)
-        assertEquals(Color.parseColor("#059669"), AppColors.COLOR_GREEN_BG)
-        assertEquals(Color.WHITE, AppColors.COLOR_GREEN_TEXT)
-        assertEquals(Color.parseColor("#2563EB"), AppColors.COLOR_CHIP_BG)
-        assertEquals(Color.WHITE, AppColors.COLOR_CHIP_TEXT)
+        assertEquals(Color.parseColor("#ECFDF5"), AppColors.COLOR_GREEN_BG)
+        assertEquals(Color.parseColor("#047857"), AppColors.COLOR_GREEN_TEXT)
+        assertEquals(Color.parseColor("#F1F5F9"), AppColors.COLOR_CHIP_BG)
+        assertEquals(Color.parseColor("#334155"), AppColors.COLOR_CHIP_TEXT)
     }
 
     @Test

@@ -48,25 +48,7 @@ object HomeScreen {
         var termoBusca = ""
         var situacaoSelecionada = "Todos"
         var categoriaSelecionada = "Todas"
-
-        layout.addView(UIComponents.criarRotulo(context, "Pesquisar"))
-        val inputBusca = UIComponents.criarCampoTexto(context, "Digite o título do evento...")
-        layout.addView(inputBusca)
-
-        layout.addView(UIComponents.criarRotulo(context, "Situação do evento"))
-        val rowSituacao = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            weightSum = 3f
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 0, 0, dpToPx(8))
-            }
-        }
-
-        val opcoesSituacao = listOf("Todos", "Próximos", "Encerrados")
-        val botoesSituacao = mutableListOf<Button>()
+        var ordenacaoSelecionada = "Data"
 
         val containerEventos = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -98,7 +80,13 @@ object HomeScreen {
                         bateTitulo && bateCategoria && bateSituacao
                     }
 
-                    if (filtrados.isEmpty()) {
+                    val ordenados = when (ordenacaoSelecionada) {
+                        "Por título" -> filtrados.sortedBy { it.titulo }
+                        "Por nota/avaliação" -> filtrados.sortedByDescending { userRepo.getMediaAvaliacoes(it.id).first }
+                        else -> filtrados
+                    }
+
+                    if (ordenados.isEmpty()) {
                         val tvVazio = TextView(context).apply {
                             text = "Nenhum evento encontrado com os filtros selecionados."
                             textSize = 15f
@@ -108,7 +96,7 @@ object HomeScreen {
                         }
                         containerEventos.addView(tvVazio)
                     } else {
-                        filtrados.forEach { evento ->
+                        ordenados.forEach { evento ->
                             EventCard.adicionarCardEvento(
                                 context = context,
                                 parent = containerEventos,
@@ -133,105 +121,49 @@ object HomeScreen {
             )
         }
 
-        fun atualizarEstiloSituacao() {
-            botoesSituacao.forEachIndexed { index, btn ->
-                val opcao = opcoesSituacao[index]
-                val selecionado = (opcao == situacaoSelecionada)
-                if (selecionado) {
-                    btn.background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 24f)
-                    btn.setTextColor(Color.WHITE)
-                } else {
-                    btn.background = UIComponents.criarShape(context, Color.TRANSPARENT, AppColors.COLOR_STROKE, 1, 24f)
-                    btn.setTextColor(AppColors.COLOR_TEXT_MUTED)
-                }
-            }
-        }
-
-        opcoesSituacao.forEach { opcao ->
-            val btn = UIComponents.criarButtonInstance(context).apply {
-                text = opcao
-                textSize = 13f
-                typeface = Typeface.DEFAULT_BOLD
-                isAllCaps = false
-                if (this is MaterialButton) {
-                    cornerRadius = dpToPx(24)
-                }
-                backgroundTintList = null
-                setOnClickListener {
-                    situacaoSelecionada = opcao
-                    atualizarEstiloSituacao()
-                    aplicarFiltros()
-                }
-                layoutParams = LinearLayout.LayoutParams(0, dpToPx(42), 1f).apply {
-                    setMargins(dpToPx(2), 0, dpToPx(2), 0)
-                }
-            }
-            botoesSituacao.add(btn)
-            rowSituacao.addView(btn)
-        }
-        atualizarEstiloSituacao()
-        layout.addView(rowSituacao)
-
-        layout.addView(UIComponents.criarRotulo(context, "Categoria"))
-        val scrollCategorias = HorizontalScrollView(context).apply {
-            isHorizontalScrollBarEnabled = false
+        val rowBuscaFiltro = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                setMargins(0, 0, 0, dpToPx(16))
+                setMargins(0, 0, 0, dpToPx(8))
             }
         }
 
-        val rowCategorias = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-        }
-
-        val categoriasOpcoes = listOf("Todas", "Acadêmico", "Workshop", "Hackathon", "Palestra", "Carreiras", "Segurança")
-        val botoesCategorias = mutableListOf<Button>()
-
-        fun atualizarEstiloCategorias() {
-            botoesCategorias.forEachIndexed { index, btn ->
-                val cat = categoriasOpcoes[index]
-                val selecionada = (cat == categoriaSelecionada)
-                if (selecionada) {
-                    btn.background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 24f)
-                    btn.setTextColor(Color.WHITE)
-                } else {
-                    btn.background = UIComponents.criarShape(context, Color.TRANSPARENT, AppColors.COLOR_STROKE, 1, 24f)
-                    btn.setTextColor(AppColors.COLOR_TEXT_MUTED)
-                }
+        val inputBusca = UIComponents.criarCampoTexto(context, "Digite o título do evento...").apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                setMargins(0, 0, dpToPx(8), 0)
             }
         }
+        rowBuscaFiltro.addView(inputBusca)
 
-        categoriasOpcoes.forEach { cat ->
-            val btnCat = UIComponents.criarButtonInstance(context).apply {
-                text = cat
-                textSize = 12f
-                typeface = Typeface.DEFAULT_BOLD
-                isAllCaps = false
-                if (this is MaterialButton) {
-                    cornerRadius = dpToPx(24)
-                }
-                backgroundTintList = null
-                setOnClickListener {
-                    categoriaSelecionada = cat
-                    atualizarEstiloCategorias()
-                    aplicarFiltros()
-                }
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    dpToPx(38)
-                ).apply {
-                    setMargins(0, 0, dpToPx(8), 0)
-                }
+        val btnAbrirFiltros = android.widget.ImageView(context).apply {
+            setImageResource(context.resources.getIdentifier("ic_filter", "drawable", context.packageName))
+            setColorFilter(Color.WHITE)
+            background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 8f)
+            setPadding(dpToPx(10), dpToPx(10), dpToPx(10), dpToPx(10))
+            layoutParams = LinearLayout.LayoutParams(dpToPx(42), dpToPx(42))
+            setOnClickListener {
+                exibirBottomSheetFiltros(
+                    context = context,
+                    categoriaAtual = categoriaSelecionada,
+                    situacaoAtual = situacaoSelecionada,
+                    ordenacaoAtual = ordenacaoSelecionada,
+                    onAplicar = { cat, sit, ord ->
+                        categoriaSelecionada = cat
+                        situacaoSelecionada = sit
+                        ordenacaoSelecionada = ord
+                        aplicarFiltros()
+                    }
+                )
             }
-            botoesCategorias.add(btnCat)
-            rowCategorias.addView(btnCat)
         }
-        atualizarEstiloCategorias()
-        scrollCategorias.addView(rowCategorias)
-        layout.addView(scrollCategorias)
+        rowBuscaFiltro.addView(btnAbrirFiltros)
+
+        layout.addView(UIComponents.criarRotulo(context, "Pesquisar e Filtrar"))
+        layout.addView(rowBuscaFiltro)
 
         inputBusca.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -244,5 +176,105 @@ object HomeScreen {
 
         aplicarFiltros()
         layout.addView(containerEventos)
+    }
+
+    private fun exibirBottomSheetFiltros(
+        context: Context,
+        categoriaAtual: String,
+        situacaoAtual: String,
+        ordenacaoAtual: String,
+        onAplicar: (String, String, String) -> Unit
+    ) {
+        fun dpToPx(dp: Int): Int = UIComponents.dpToPx(context, dp)
+
+        val bottomSheet = com.google.android.material.bottomsheet.BottomSheetDialog(context)
+        val view = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dpToPx(20), dpToPx(20), dpToPx(20), dpToPx(24))
+            setBackgroundColor(AppColors.COLOR_CARD_BG)
+        }
+
+        val tvTitulo = TextView(context).apply {
+            text = "Filtros e Ordenação"
+            textSize = 20f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(AppColors.COLOR_TEXT_MAIN)
+            setPadding(0, 0, 0, dpToPx(16))
+        }
+        view.addView(tvTitulo)
+
+        var tempCat = categoriaAtual
+        var tempSit = situacaoAtual
+        var tempOrd = ordenacaoAtual
+
+        view.addView(UIComponents.criarRotulo(context, "Categoria"))
+        val spinnerCat = android.widget.Spinner(context).apply {
+            adapter = android.widget.ArrayAdapter(
+                context,
+                android.R.layout.simple_spinner_dropdown_item,
+                listOf("Todas", "Acadêmico", "Workshop", "Hackathon", "Palestra", "Carreiras", "Segurança")
+            )
+            val index = listOf("Todas", "Acadêmico", "Workshop", "Hackathon", "Palestra", "Carreiras", "Segurança").indexOf(tempCat)
+            if (index >= 0) setSelection(index)
+        }
+        view.addView(spinnerCat)
+
+        view.addView(UIComponents.criarRotulo(context, "Situação"))
+        val spinnerSit = android.widget.Spinner(context).apply {
+            adapter = android.widget.ArrayAdapter(
+                context,
+                android.R.layout.simple_spinner_dropdown_item,
+                listOf("Todos", "Próximos", "Encerrados")
+            )
+            val index = listOf("Todos", "Próximos", "Encerrados").indexOf(tempSit)
+            if (index >= 0) setSelection(index)
+        }
+        view.addView(spinnerSit)
+
+        view.addView(UIComponents.criarRotulo(context, "Ordenar por"))
+        val spinnerOrd = android.widget.Spinner(context).apply {
+            adapter = android.widget.ArrayAdapter(
+                context,
+                android.R.layout.simple_spinner_dropdown_item,
+                listOf("Data", "Por título", "Por nota/avaliação")
+            )
+            val index = listOf("Data", "Por título", "Por nota/avaliação").indexOf(tempOrd)
+            if (index >= 0) setSelection(index)
+        }
+        view.addView(spinnerOrd)
+
+        val rowBotoes = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dpToPx(20), 0, 0)
+        }
+
+        val btnLimpar = UIComponents.criarBotao(context, "Limpar Filtros", primario = false) {
+            onAplicar("Todas", "Todos", "Data")
+            bottomSheet.dismiss()
+        }.apply {
+            layoutParams = LinearLayout.LayoutParams(0, dpToPx(42), 1f).apply {
+                setMargins(0, 0, dpToPx(4), 0)
+            }
+        }
+        rowBotoes.addView(btnLimpar)
+
+        val btnAplicar = UIComponents.criarBotao(context, "Aplicar Filtros", primario = true) {
+            onAplicar(
+                spinnerCat.selectedItem.toString(),
+                spinnerSit.selectedItem.toString(),
+                spinnerOrd.selectedItem.toString()
+            )
+            bottomSheet.dismiss()
+        }.apply {
+            layoutParams = LinearLayout.LayoutParams(0, dpToPx(42), 1f).apply {
+                setMargins(dpToPx(4), 0, 0, 0)
+            }
+        }
+        rowBotoes.addView(btnAplicar)
+
+        view.addView(rowBotoes)
+
+        bottomSheet.setContentView(view)
+        bottomSheet.show()
     }
 }

@@ -392,7 +392,7 @@ object EventDetail {
                     typeface = Typeface.DEFAULT_BOLD
                     isAllCaps = false
                     if (this is MaterialButton) {
-                        cornerRadius = UIComponents.dpToPx(context, 24)
+                        cornerRadius = UIComponents.dpToPx(context, 8)
                         strokeColor = android.content.res.ColorStateList.valueOf(Color.parseColor("#FCD34D"))
                         strokeWidth = UIComponents.dpToPx(context, 1)
                     }
