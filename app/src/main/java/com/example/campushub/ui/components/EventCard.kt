@@ -108,6 +108,21 @@ object EventCard {
 
         layoutInterno.addView(rowTop)
 
+        if (evento.imagemUrl.isNotEmpty()) {
+            val ivCapa = android.widget.ImageView(context).apply {
+                scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
+                visibility = View.GONE
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    dpToPx(140)
+                ).apply {
+                    setMargins(0, dpToPx(8), 0, dpToPx(4))
+                }
+            }
+            MediaHelper.carregarImagemParaImageView(ivCapa, evento.imagemUrl)
+            layoutInterno.addView(ivCapa)
+        }
+
         val tvTitulo = TextView(context).apply {
             text = evento.titulo
             textSize = 18f

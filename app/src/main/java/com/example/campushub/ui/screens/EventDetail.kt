@@ -14,6 +14,7 @@ import com.example.campushub.data.repository.EventRepository
 import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.components.EventMediaComponent
 import com.example.campushub.ui.components.MapViewComponent
+import com.example.campushub.ui.components.MediaHelper
 import com.example.campushub.ui.components.UIComponents
 import com.example.campushub.ui.theme.AppColors
 import com.google.android.material.button.MaterialButton
@@ -47,6 +48,21 @@ object EventDetail {
 
         val innerInfo = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
+        }
+
+        if (evento.imagemUrl.isNotEmpty()) {
+            val ivCapa = ImageView(context).apply {
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                visibility = View.GONE
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    UIComponents.dpToPx(context, 200)
+                ).apply {
+                    setMargins(0, 0, 0, UIComponents.dpToPx(context, 12))
+                }
+            }
+            MediaHelper.carregarImagemParaImageView(ivCapa, evento.imagemUrl)
+            innerInfo.addView(ivCapa)
         }
 
         fun criarLinhaInfo(icone: String, titulo: String, valor: String) {

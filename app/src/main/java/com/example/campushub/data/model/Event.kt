@@ -14,5 +14,6 @@ data class Event(
     val longitude: Double = -46.633308,
     val vagas: Int = 0,
     val encerrado: Boolean = false,
-    val criadorEmail: String = ""
+    val criadorEmail: String = "",
+    val imagemUrl: String = ""
 )

@@ -50,6 +50,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private var onFotoCapaCallback: ((String) -> Unit)? = null
+
+    private val pickCapaLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) {
+            val caminhoSalvo = MediaHelper.salvarFotoGaleriaLocalmente(this, uri)
+            if (caminhoSalvo != null) {
+                onFotoCapaCallback?.invoke(caminhoSalvo)
+            }
+        }
+    }
+
     private val pickGalleryLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
             val caminhoSalvo = MediaHelper.salvarFotoGaleriaLocalmente(this, uri)
@@ -262,6 +273,10 @@ class MainActivity : AppCompatActivity() {
             layout = layout,
             userRepo = userRepo,
             eventoParaEditar = eventoParaEditar,
+            onEscolherFotoCapa = { callback ->
+                onFotoCapaCallback = callback
+                pickCapaLauncher.launch("image/*")
+            },
             onSucesso = { mostrarHome() },
             onVoltar = { mostrarHome() }
         )

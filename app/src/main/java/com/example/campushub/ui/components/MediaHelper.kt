@@ -23,6 +23,37 @@ object MediaHelper {
     private var mediaPlayer: MediaPlayer? = null
     private var audioEmAndamentoPath: String? = null
 
+    fun carregarImagemParaImageView(imageView: android.widget.ImageView, urlOuCaminho: String) {
+        if (urlOuCaminho.isBlank()) return
+        if (urlOuCaminho.startsWith("http://") || urlOuCaminho.startsWith("https://")) {
+            java.util.concurrent.Executors.newSingleThreadExecutor().execute {
+                try {
+                    val url = java.net.URL(urlOuCaminho)
+                    val conn = url.openConnection()
+                    conn.connectTimeout = 5000
+                    conn.readTimeout = 5000
+                    val inputStream = conn.getInputStream()
+                    val bitmap = android.graphics.BitmapFactory.decodeStream(inputStream)
+                    imageView.post {
+                        if (bitmap != null) {
+                            imageView.setImageBitmap(bitmap)
+                            imageView.visibility = android.view.View.VISIBLE
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+        } else {
+            val file = File(urlOuCaminho)
+            if (file.exists()) {
+                val bitmap = android.graphics.BitmapFactory.decodeFile(file.absolutePath)
+                if (bitmap != null) {
+                    imageView.setImageBitmap(bitmap)
+                    imageView.visibility = android.view.View.VISIBLE
+                }
+            }
+        }
+    }
+
     fun salvarFotoGaleriaLocalmente(context: Context, imageUri: Uri): String? {
         return try {
             val pastaFotos = File(context.filesDir, "event_photos").apply {

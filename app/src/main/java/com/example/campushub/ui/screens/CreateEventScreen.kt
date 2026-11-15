@@ -6,14 +6,15 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.text.InputType
+import android.view.View
 import android.widget.*
 import com.example.campushub.data.model.Event
 import com.example.campushub.data.repository.EventRepository
 import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.components.MapViewComponent
+import com.example.campushub.ui.components.MediaHelper
 import com.example.campushub.ui.components.UIComponents
 import com.example.campushub.ui.theme.AppColors
-import com.google.android.material.button.MaterialButton
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -25,6 +26,7 @@ object CreateEventScreen {
         layout: LinearLayout,
         userRepo: UserPreferencesRepository,
         eventoParaEditar: Event? = null,
+        onEscolherFotoCapa: ((onFotoSelecionada: (String) -> Unit) -> Unit) = {},
         onSucesso: () -> Unit,
         onVoltar: () -> Unit
     ) {
@@ -34,16 +36,30 @@ object CreateEventScreen {
 
         layout.addView(UIComponents.criarHeaderBar(context, tituloHeader, subHeader, onVoltar = onVoltar))
 
-        var categoriaSelecionada = eventoParaEditar?.categoria ?: "Acadêmico"
         var ehEncerrado = eventoParaEditar?.encerrado ?: false
+        var imagemUrlSalva = eventoParaEditar?.imagemUrl ?: ""
+        var dataBadgeCalculada = eventoParaEditar?.dataBadge ?: ""
 
-        layout.addView(UIComponents.criarRotulo(context, "Título do Evento"))
-        val inputTitulo = UIComponents.criarCampoTexto(context, "Ex: Workshop de Kotlin e Android", valorInicial = eventoParaEditar?.titulo ?: "")
+        // =========================================================
+        // SEÇÃO 1: INFORMAÇÕES BÁSICAS
+        // =========================================================
+        layout.addView(UIComponents.criarRotulo(context, "Informações Básicas"))
+
+        val inputTitulo = UIComponents.criarCampoTexto(context, "Título do Evento (Ex: Workshop Android)", valorInicial = eventoParaEditar?.titulo ?: "")
         layout.addView(inputTitulo)
 
         layout.addView(UIComponents.criarRotulo(context, "Categoria"))
-        val scrollCategorias = HorizontalScrollView(context).apply {
-            isHorizontalScrollBarEnabled = false
+        val categoriasLista = listOf("Acadêmico", "Workshop", "Hackathon", "Palestra", "Carreiras", "Segurança")
+        val spinnerCategoria = Spinner(context).apply {
+            adapter = ArrayAdapter(
+                context,
+                android.R.layout.simple_spinner_dropdown_item,
+                categoriasLista
+            )
+            val index = categoriasLista.indexOf(eventoParaEditar?.categoria ?: "Acadêmico")
+            if (index >= 0) setSelection(index)
+            background = UIComponents.criarShape(context, AppColors.COLOR_CARD_BG, AppColors.COLOR_STROKE, 1, 8f)
+            setPadding(UIComponents.dpToPx(context, 14), UIComponents.dpToPx(context, 12), UIComponents.dpToPx(context, 14), UIComponents.dpToPx(context, 12))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -51,70 +67,21 @@ object CreateEventScreen {
                 setMargins(0, 0, 0, UIComponents.dpToPx(context, 8))
             }
         }
+        layout.addView(spinnerCategoria)
 
-        val rowCategorias = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-        }
-
-        val categoriasOpcoes = listOf("Acadêmico", "Workshop", "Hackathon", "Palestra", "Carreiras", "Segurança")
-        val botoesCategorias = mutableListOf<Button>()
-
-        fun atualizarEstiloCategorias() {
-            botoesCategorias.forEachIndexed { index, btn ->
-                val cat = categoriasOpcoes[index]
-                val selecionada = (cat == categoriaSelecionada)
-                if (selecionada) {
-                    btn.background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 20f)
-                    btn.setTextColor(Color.WHITE)
-                } else {
-                    btn.background = UIComponents.criarShape(context, Color.WHITE, AppColors.COLOR_STROKE, 1, 20f)
-                    btn.setTextColor(AppColors.COLOR_TEXT_MUTED)
-                }
-            }
-        }
-
-        categoriasOpcoes.forEach { cat ->
-            val btnCat = UIComponents.criarButtonInstance(context).apply {
-                text = cat
-                textSize = 12f
-                typeface = Typeface.DEFAULT_BOLD
-                isAllCaps = false
-                if (this is MaterialButton) {
-                    cornerRadius = UIComponents.dpToPx(context, 20)
-                }
-                backgroundTintList = null
-                setOnClickListener {
-                    categoriaSelecionada = cat
-                    atualizarEstiloCategorias()
-                }
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    UIComponents.dpToPx(context, 38)
-                ).apply {
-                    setMargins(0, 0, UIComponents.dpToPx(context, 8), 0)
-                }
-            }
-            botoesCategorias.add(btnCat)
-            rowCategorias.addView(btnCat)
-        }
-        atualizarEstiloCategorias()
-        scrollCategorias.addView(rowCategorias)
-        layout.addView(scrollCategorias)
-
-        layout.addView(UIComponents.criarRotulo(context, "Descrição do Evento"))
-        val inputDescricao = UIComponents.criarCampoTexto(context, "Informe os detalhes, palestrantes e programação...", valorInicial = eventoParaEditar?.descricao ?: "")
+        val inputDescricao = UIComponents.criarCampoTexto(context, "Descrição e programação do evento...", valorInicial = eventoParaEditar?.descricao ?: "")
         layout.addView(inputDescricao)
 
-        layout.addView(UIComponents.criarRotulo(context, "Data do Evento (Clique para selecionar no calendário)"))
-        val inputData = UIComponents.criarCampoTexto(context, "📅 Clique para selecionar a data", valorInicial = eventoParaEditar?.data ?: "").apply {
+        // =========================================================
+        // SEÇÃO 2: DATA E HORÁRIO
+        // =========================================================
+        layout.addView(UIComponents.criarRotulo(context, "Data e Horário"))
+
+        val inputData = UIComponents.criarCampoTexto(context, "Data (Clique para abrir o calendário)", valorInicial = eventoParaEditar?.data ?: "").apply {
             isFocusable = false
             isClickable = true
         }
         layout.addView(inputData)
-
-        layout.addView(UIComponents.criarRotulo(context, "Selo de Data (Gerado automaticamente)"))
-        val inputDataBadge = UIComponents.criarCampoTexto(context, "Ex: 25 NOV", valorInicial = eventoParaEditar?.dataBadge ?: "")
-        layout.addView(inputDataBadge)
 
         fun abrirDatePicker() {
             val cal = Calendar.getInstance()
@@ -126,7 +93,7 @@ object CreateEventScreen {
                 } catch (_: Exception) {}
             }
 
-            val datePickerDialog = DatePickerDialog(
+            DatePickerDialog(
                 context,
                 { _, year, month, dayOfMonth ->
                     val dateStr = String.format(Locale.getDefault(), "%02d/%02d/%04d", dayOfMonth, month + 1, year)
@@ -134,20 +101,16 @@ object CreateEventScreen {
 
                     val calBadge = Calendar.getInstance().apply { set(year, month, dayOfMonth) }
                     val monthFormat = SimpleDateFormat("MMM", Locale.forLanguageTag("pt-BR"))
-                    val badgeStr = String.format(Locale.getDefault(), "%02d %s", dayOfMonth, monthFormat.format(calBadge.time).uppercase(Locale.getDefault()))
-                    inputDataBadge.setText(badgeStr)
+                    dataBadgeCalculada = String.format(Locale.getDefault(), "%02d %s", dayOfMonth, monthFormat.format(calBadge.time).uppercase(Locale.getDefault()))
                 },
                 cal.get(Calendar.YEAR),
                 cal.get(Calendar.MONTH),
                 cal.get(Calendar.DAY_OF_MONTH)
-            )
-            datePickerDialog.show()
+            ).show()
         }
-
         inputData.setOnClickListener { abrirDatePicker() }
 
-        layout.addView(UIComponents.criarRotulo(context, "Horário de Início (Clique para selecionar no relógio)"))
-        val inputHorario = UIComponents.criarCampoTexto(context, "⏰ Clique para selecionar o horário", valorInicial = eventoParaEditar?.horario ?: "").apply {
+        val inputHorario = UIComponents.criarCampoTexto(context, "Horário (Clique para abrir o relógio)", valorInicial = eventoParaEditar?.horario ?: "").apply {
             isFocusable = false
             isClickable = true
         }
@@ -165,7 +128,7 @@ object CreateEventScreen {
                 } catch (_: Exception) {}
             }
 
-            val timePickerDialog = TimePickerDialog(
+            TimePickerDialog(
                 context,
                 { _, hourOfDay, minute ->
                     val timeStr = String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, minute)
@@ -174,62 +137,77 @@ object CreateEventScreen {
                 cal.get(Calendar.HOUR_OF_DAY),
                 cal.get(Calendar.MINUTE),
                 true
-            )
-            timePickerDialog.show()
+            ).show()
         }
-
         inputHorario.setOnClickListener { abrirTimePicker() }
 
-        layout.addView(UIComponents.criarRotulo(context, "Local / Prédio (Ex: Auditório Central)"))
-        val inputLocal = UIComponents.criarCampoTexto(context, "Ex: Auditório Central / Lab 02", valorInicial = eventoParaEditar?.local ?: "")
+        // =========================================================
+        // SEÇÃO 3: LOCALIZAÇÃO
+        // =========================================================
+        layout.addView(UIComponents.criarRotulo(context, "Localização"))
+
+        val inputLocal = UIComponents.criarCampoTexto(context, "Local / Prédio (Ex: Auditório Central)", valorInicial = eventoParaEditar?.local ?: "")
         layout.addView(inputLocal)
 
-        layout.addView(UIComponents.criarRotulo(context, "Endereço Completo"))
         val inputEndereco = UIComponents.criarCampoTexto(
             context,
-            "Ex: Av. Prof. Luciano Gualberto, 380 - Cidade Universitária",
+            "Endereço Completo",
             valorInicial = eventoParaEditar?.endereco ?: "Av. Prof. Luciano Gualberto, 380 - Cidade Universitária"
         )
         layout.addView(inputEndereco)
 
-        layout.addView(UIComponents.criarRotulo(context, "Latitude no Mapa"))
-        val inputLat = UIComponents.criarCampoTexto(
-            context,
-            "Ex: -23.5583",
-            InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_NUMBER_FLAG_SIGNED,
-            valorInicial = if (ehEdicao) eventoParaEditar?.latitude.toString() else "-23.5583"
-        )
-        layout.addView(inputLat)
+        val latitude = eventoParaEditar?.latitude ?: -23.5583
+        val longitude = eventoParaEditar?.longitude ?: -46.7314
 
-        layout.addView(UIComponents.criarRotulo(context, "Longitude no Mapa"))
-        val inputLng = UIComponents.criarCampoTexto(
-            context,
-            "Ex: -46.7314",
-            InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_NUMBER_FLAG_SIGNED,
-            valorInicial = if (ehEdicao) eventoParaEditar?.longitude.toString() else "-46.7314"
-        )
-        layout.addView(inputLng)
-
-        layout.addView(UIComponents.criarRotulo(context, "🗺️ Pré-visualização do Local no Mapa (MapLibre)"))
-        val latPreview = eventoParaEditar?.latitude ?: -23.5583
-        val lngPreview = eventoParaEditar?.longitude ?: -46.7314
         val mapaPreview = MapViewComponent.criarMapaLocalizacao(
             context = context,
-            latitude = latPreview,
-            longitude = lngPreview,
+            latitude = latitude,
+            longitude = longitude,
             titulo = eventoParaEditar?.titulo?.ifEmpty { "Local do Evento" } ?: "Local do Evento",
             subtitulo = eventoParaEditar?.local?.ifEmpty { "Campus" } ?: "Campus",
-            alturaDp = 180
+            alturaDp = 130
         )
         layout.addView(mapaPreview)
 
-        layout.addView(UIComponents.criarRotulo(context, "Quantidade de Vagas"))
-        val inputVagas = UIComponents.criarCampoTexto(context, "Ex: 50", InputType.TYPE_CLASS_NUMBER, valorInicial = if (ehEdicao) eventoParaEditar?.vagas.toString() else "")
+        // =========================================================
+        // SEÇÃO 4: DETALHES E IMAGEM DE CAPA
+        // =========================================================
+        layout.addView(UIComponents.criarRotulo(context, "Detalhes e Imagem"))
+
+        val inputVagas = UIComponents.criarCampoTexto(context, "Quantidade de Vagas (Ex: 50)", InputType.TYPE_CLASS_NUMBER, valorInicial = if (ehEdicao) eventoParaEditar?.vagas.toString() else "")
         layout.addView(inputVagas)
 
+        val ivPreviewCapa = ImageView(context).apply {
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            visibility = if (imagemUrlSalva.isNotEmpty()) View.VISIBLE else View.GONE
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                UIComponents.dpToPx(context, 140)
+            ).apply {
+                setMargins(0, 0, 0, UIComponents.dpToPx(context, 8))
+            }
+        }
+        if (imagemUrlSalva.isNotEmpty()) {
+            MediaHelper.carregarImagemParaImageView(ivPreviewCapa, imagemUrlSalva)
+        }
+        layout.addView(ivPreviewCapa)
+
+        val btnEscolherFoto = UIComponents.criarBotao(context, "SELECIONAR FOTO DA GALERIA", primario = false) {
+            onEscolherFotoCapa { caminhoLocal ->
+                imagemUrlSalva = caminhoLocal
+                MediaHelper.carregarImagemParaImageView(ivPreviewCapa, caminhoLocal)
+                ivPreviewCapa.visibility = View.VISIBLE
+            }
+        }
+        layout.addView(btnEscolherFoto)
+
+        // =========================================================
+        // SEÇÃO 5: PUBLICAÇÃO
+        // =========================================================
         layout.addView(UIComponents.criarRotulo(context, "Situação"))
+
         val checkEncerrado = CheckBox(context).apply {
-            text = "Este evento já ocorreu (marcar como Encerrado)"
+            text = "Evento Encerrado"
             textSize = 14f
             isChecked = ehEncerrado
             setTextColor(AppColors.COLOR_TEXT_MAIN)
@@ -240,18 +218,16 @@ object CreateEventScreen {
         }
         layout.addView(checkEncerrado)
 
-        val textoBotaoSalvar = if (ehEdicao) "SALVAR ALTERAÇÕES NO FIREBASE" else "PUBLICAR EVENTO NO FIREBASE"
+        val textoBotaoSalvar = if (ehEdicao) "SALVAR ALTERAÇÕES" else "PUBLICAR EVENTO"
         val btnPublicar = UIComponents.criarBotao(context, textoBotaoSalvar, primario = true) {
             val titulo = inputTitulo.text.toString().trim()
             val descricao = inputDescricao.text.toString().trim()
             val data = inputData.text.toString().trim()
-            var dataBadge = inputDataBadge.text.toString().trim()
             val horario = inputHorario.text.toString().trim()
             val local = inputLocal.text.toString().trim()
             val endereco = inputEndereco.text.toString().trim()
-            val latStr = inputLat.text.toString().trim()
-            val lngStr = inputLng.text.toString().trim()
             val vagasStr = inputVagas.text.toString().trim()
+            val categoria = spinnerCategoria.selectedItem.toString()
 
             if (titulo.isEmpty()) {
                 Toast.makeText(context, "Digite o título do evento.", Toast.LENGTH_SHORT).show()
@@ -266,18 +242,18 @@ object CreateEventScreen {
             }
 
             if (data.isEmpty()) {
-                Toast.makeText(context, "Digite a data do evento.", Toast.LENGTH_SHORT).show()
-                inputData.requestFocus()
+                Toast.makeText(context, "Selecione a data do evento.", Toast.LENGTH_SHORT).show()
+                abrirDatePicker()
                 return@criarBotao
             }
 
-            if (dataBadge.isEmpty()) {
-                dataBadge = if (data.length >= 6) data.substring(0, 5) else data
+            if (dataBadgeCalculada.isEmpty()) {
+                dataBadgeCalculada = if (data.length >= 6) data.substring(0, 5) else data
             }
 
             if (horario.isEmpty()) {
-                Toast.makeText(context, "Digite o horário do evento.", Toast.LENGTH_SHORT).show()
-                inputHorario.requestFocus()
+                Toast.makeText(context, "Selecione o horário do evento.", Toast.LENGTH_SHORT).show()
+                abrirTimePicker()
                 return@criarBotao
             }
 
@@ -287,8 +263,6 @@ object CreateEventScreen {
                 return@criarBotao
             }
 
-            val latitude = latStr.toDoubleOrNull() ?: -23.5583
-            val longitude = lngStr.toDoubleOrNull() ?: -46.7314
             val vagas = vagasStr.toIntOrNull() ?: 50
             val eventoId = eventoParaEditar?.id ?: (System.currentTimeMillis() % 1000000).toInt()
             val criadorEmail = if (ehEdicao && eventoParaEditar?.criadorEmail?.isNotEmpty() == true) {
@@ -300,10 +274,10 @@ object CreateEventScreen {
             val eventoSalvar = Event(
                 id = eventoId,
                 titulo = titulo,
-                categoria = categoriaSelecionada,
+                categoria = categoria,
                 descricao = descricao,
                 data = data,
-                dataBadge = dataBadge.uppercase(Locale.getDefault()),
+                dataBadge = dataBadgeCalculada.uppercase(Locale.getDefault()),
                 horario = horario,
                 local = local,
                 endereco = endereco,
@@ -311,14 +285,15 @@ object CreateEventScreen {
                 longitude = longitude,
                 vagas = vagas,
                 encerrado = ehEncerrado,
-                criadorEmail = criadorEmail
+                criadorEmail = criadorEmail,
+                imagemUrl = imagemUrlSalva
             )
 
             if (ehEdicao) {
                 EventRepository.atualizarEvento(
                     evento = eventoSalvar,
                     onSuccess = {
-                        Toast.makeText(context, "Evento atualizado com sucesso no Firebase!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "Evento atualizado com sucesso!", Toast.LENGTH_LONG).show()
                         onSucesso()
                     },
                     onError = { error ->
@@ -329,7 +304,7 @@ object CreateEventScreen {
                 EventRepository.adicionarEvento(
                     evento = eventoSalvar,
                     onSuccess = {
-                        Toast.makeText(context, "Evento publicado com sucesso no Firebase!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(context, "Evento publicado com sucesso!", Toast.LENGTH_LONG).show()
                         onSucesso()
                     },
                     onError = { error ->
