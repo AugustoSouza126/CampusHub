@@ -65,9 +65,9 @@ object EventDetail {
             innerInfo.addView(ivCapa)
         }
 
-        fun criarLinhaInfo(icone: String, titulo: String, valor: String) {
+        fun criarLinhaInfo(titulo: String, valor: String) {
             val tv = TextView(context).apply {
-                text = "$icone  $titulo: $valor"
+                text = "$titulo: $valor"
                 textSize = 15f
                 setTextColor(AppColors.COLOR_TEXT_MAIN)
                 setPadding(0, UIComponents.dpToPx(context, 6), 0, UIComponents.dpToPx(context, 6))
@@ -75,13 +75,13 @@ object EventDetail {
             innerInfo.addView(tv)
         }
 
-        criarLinhaInfo("📅", "Data", evento.data)
-        criarLinhaInfo("⏰", "Horário", evento.horario)
-        criarLinhaInfo("📍", "Local", evento.local)
+        criarLinhaInfo("Data", evento.data)
+        criarLinhaInfo("Horário", evento.horario)
+        criarLinhaInfo("Local", evento.local)
         if (evento.endereco.isNotEmpty()) {
-            criarLinhaInfo("🏠", "Endereço", evento.endereco)
+            criarLinhaInfo("Endereço", evento.endereco)
         }
-        criarLinhaInfo("👥", "Vagas disponíveis", "${evento.vagas}")
+        criarLinhaInfo("Vagas disponíveis", "${evento.vagas}")
 
         val tvDescHeader = TextView(context).apply {
             text = "Descrição do Evento"
@@ -109,7 +109,7 @@ object EventDetail {
         }
 
         val tvMapaHeader = TextView(context).apply {
-            text = "🗺️ Localização no Mapa (MapLibre)"
+            text = "Localização no Mapa"
             textSize = 16f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(AppColors.COLOR_TEXT_MAIN)
@@ -119,9 +119,9 @@ object EventDetail {
 
         val tvEnderecoSub = TextView(context).apply {
             text = if (evento.endereco.isNotEmpty()) {
-                "📍 ${evento.local}\n🏠 ${evento.endereco}"
+                "${evento.local}\n${evento.endereco}"
             } else {
-                "📍 ${evento.local}"
+                evento.local
             }
             textSize = 13f
             setTextColor(AppColors.COLOR_TEXT_MUTED)
@@ -142,7 +142,7 @@ object EventDetail {
         )
         layoutMapa.addView(mapaView)
 
-        val btnAbrirExterno = UIComponents.criarBotao(context, "🧭 ABRIR ROTA NO MAPA EXTERNO", primario = false) {
+        val btnAbrirExterno = UIComponents.criarBotao(context, "ABRIR ROTA NO MAPA EXTERNO", primario = false) {
             val uri = Uri.parse("geo:$lat,$lng?q=$lat,$lng(${Uri.encode(evento.titulo)})")
             val intent = Intent(Intent.ACTION_VIEW, uri)
             try {
@@ -173,7 +173,7 @@ object EventDetail {
             }
 
             val tvCriadorTitulo = TextView(context).apply {
-                text = "🛠️ Painel do Criador do Evento"
+                text = "Painel do Criador do Evento"
                 textSize = 16f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(Color.parseColor("#D97706"))
@@ -263,6 +263,10 @@ object EventDetail {
 
         if (userRepo.isAluno()) {
             val inscrito = userRepo.isInscrito(evento.id)
+            val naListaEspera = userRepo.isNaListaEspera(evento.id)
+            val totalInscritos = userRepo.getTotalInscritos(evento.id)
+            val capacidadeEsgotada = (totalInscritos >= evento.vagas && evento.vagas > 0)
+
             if (inscrito) {
                 val tvStatus = TextView(context).apply {
                     text = "Sua inscrição está confirmada neste evento."
@@ -275,7 +279,23 @@ object EventDetail {
 
                 layout.addView(UIComponents.criarBotao(context, "CANCELAR INSCRIÇÃO", primario = false, perigo = true) {
                     userRepo.removerInscricao(evento.id)
-                    Toast.makeText(context, "Inscrição cancelada com sucesso.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Inscrição cancelada. Vaga liberada para a lista de espera!", Toast.LENGTH_SHORT).show()
+                    atualizarManterPosicao()
+                })
+            } else if (naListaEspera) {
+                val posicao = userRepo.getPosicaoListaEspera(evento.id)
+                val tvStatusEspera = TextView(context).apply {
+                    text = "Você está na lista de espera. Posição na fila: $posicao. Se uma vaga for liberada, você será promovido automaticamente."
+                    textSize = 14f
+                    typeface = Typeface.DEFAULT_BOLD
+                    setTextColor(Color.parseColor("#B45309"))
+                    setPadding(0, UIComponents.dpToPx(context, 16), 0, UIComponents.dpToPx(context, 8))
+                }
+                layout.addView(tvStatusEspera)
+
+                layout.addView(UIComponents.criarBotao(context, "SAIR DA LISTA DE ESPERA", primario = false) {
+                    userRepo.sairListaEspera(evento.id)
+                    Toast.makeText(context, "Você saiu da lista de espera.", Toast.LENGTH_SHORT).show()
                     atualizarManterPosicao()
                 })
             } else if (evento.encerrado) {
@@ -287,6 +307,21 @@ object EventDetail {
                     setPadding(0, UIComponents.dpToPx(context, 16), 0, UIComponents.dpToPx(context, 8))
                 }
                 layout.addView(tvStatusEncerrado)
+            } else if (capacidadeEsgotada) {
+                val tvEsgotado = TextView(context).apply {
+                    text = "Capacidade máxima atingida ($totalInscritos / ${evento.vagas} vagas preenchidas). Entre na lista de espera para ocupar uma vaga em caso de desistência."
+                    textSize = 14f
+                    typeface = Typeface.DEFAULT_BOLD
+                    setTextColor(Color.parseColor("#DC2626"))
+                    setPadding(0, UIComponents.dpToPx(context, 16), 0, UIComponents.dpToPx(context, 8))
+                }
+                layout.addView(tvEsgotado)
+
+                layout.addView(UIComponents.criarBotao(context, "ENTRAR NA LISTA DE ESPERA", primario = true) {
+                    userRepo.entrarListaEspera(evento.id)
+                    Toast.makeText(context, "Você entrou na lista de espera!", Toast.LENGTH_SHORT).show()
+                    atualizarManterPosicao()
+                })
             } else {
                 layout.addView(UIComponents.criarBotao(context, "INSCREVER-SE NO EVENTO") {
                     userRepo.salvarInscricao(evento.id)

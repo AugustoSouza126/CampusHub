@@ -171,4 +171,24 @@ UserPreferencesRepositoryTest {
         assertFalse(repository.isOrganizador())
         assertTrue(repository.isAluno())
     }
+
+    @Test
+    fun testWaitlistAndAutomaticQueuePromotion() {
+        val eventId = 808
+        repository.salvarUsuario("Aluno Fila", "20268888", "alunofila@campus.edu.br", "123456", "ALUNO")
+
+        assertFalse(repository.isNaListaEspera(eventId))
+        assertEquals(0, repository.getPosicaoListaEspera(eventId))
+
+        repository.entrarListaEspera(eventId)
+        assertTrue(repository.isNaListaEspera(eventId))
+        assertEquals(1, repository.getPosicaoListaEspera(eventId))
+
+        repository.salvarInscricao(eventId)
+        assertTrue(repository.isInscrito(eventId))
+        assertFalse(repository.isNaListaEspera(eventId))
+
+        repository.removerInscricao(eventId)
+        assertFalse(repository.isInscrito(eventId))
+    }
 }

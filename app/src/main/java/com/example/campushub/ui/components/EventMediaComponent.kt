@@ -90,7 +90,7 @@ object EventMediaComponent {
                 weightSum = 2f
             }
 
-            val btnCamera = UIComponents.criarBotao(context, "📷 TIRAR FOTO", primario = true) {
+            val btnCamera = UIComponents.criarBotao(context, "TIRAR FOTO", primario = true) {
                 onTirarFotoCamera()
             }.apply {
                 layoutParams = LinearLayout.LayoutParams(0, UIComponents.dpToPx(context, 44), 1f).apply {
@@ -99,7 +99,7 @@ object EventMediaComponent {
             }
             rowBotoesFoto.addView(btnCamera)
 
-            val btnGaleria = UIComponents.criarBotao(context, "🖼️ GALERIA", primario = false) {
+            val btnGaleria = UIComponents.criarBotao(context, "GALERIA", primario = false) {
                 onEscolherFotoGaleria()
             }.apply {
                 layoutParams = LinearLayout.LayoutParams(0, UIComponents.dpToPx(context, 44), 1f).apply {
@@ -209,7 +209,7 @@ object EventMediaComponent {
 
                     if (foto.autorEmail.equals(usuarioEmailAtual, ignoreCase = true) && usuarioEmailAtual.isNotEmpty()) {
                         val btnExcluir = TextView(context).apply {
-                            text = "🗑️ Excluir Foto"
+                            text = "Excluir Foto"
                             textSize = 11f
                             typeface = Typeface.DEFAULT_BOLD
                             setTextColor(Color.parseColor("#DC2626"))
@@ -366,7 +366,7 @@ object EventMediaComponent {
                 weightSum = 2f
             }
 
-            val btnCamera = UIComponents.criarBotao(context, "🎥 GRAVAR VÍDEO", primario = true) {
+            val btnCamera = UIComponents.criarBotao(context, "GRAVAR VÍDEO", primario = true) {
                 onGravarVideoCamera()
             }.apply {
                 layoutParams = LinearLayout.LayoutParams(0, UIComponents.dpToPx(context, 44), 1f).apply {
@@ -375,7 +375,7 @@ object EventMediaComponent {
             }
             rowBotoesVideo.addView(btnCamera)
 
-            val btnGaleria = UIComponents.criarBotao(context, "🎬 GALERIA", primario = false) {
+            val btnGaleria = UIComponents.criarBotao(context, "GALERIA", primario = false) {
                 onEscolherVideoGaleria()
             }.apply {
                 layoutParams = LinearLayout.LayoutParams(0, UIComponents.dpToPx(context, 44), 1f).apply {
@@ -478,7 +478,7 @@ object EventMediaComponent {
 
                     if (video.autorEmail.equals(usuarioEmailAtual, ignoreCase = true) && usuarioEmailAtual.isNotEmpty()) {
                         val btnExcluir = TextView(context).apply {
-                            text = "🗑️ Excluir Vídeo"
+                            text = "Excluir Vídeo"
                             textSize = 11f
                             typeface = Typeface.DEFAULT_BOLD
                             setTextColor(Color.parseColor("#DC2626"))
@@ -586,7 +586,7 @@ object EventMediaComponent {
             ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
             val tvStatusGravacao = TextView(context).apply {
-                text = if (MediaHelper.isGravando()) "🔴 Gravando áudio..." else "🎙️ Clique abaixo para iniciar a gravação do seu áudio"
+                text = if (MediaHelper.isGravando()) "Gravando áudio..." else "Clique abaixo para iniciar a gravação do seu áudio"
                 textSize = 13f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(if (MediaHelper.isGravando()) Color.parseColor("#DC2626") else AppColors.COLOR_TEXT_MUTED)
@@ -595,7 +595,7 @@ object EventMediaComponent {
             layoutAudios.addView(tvStatusGravacao)
 
             if (MediaHelper.isGravando()) {
-                val btnParar = UIComponents.criarBotao(context, "⏹️ PARAR E PUBLICAR ÁUDIO", primario = true, perigo = true) {
+                val btnParar = UIComponents.criarBotao(context, "PARAR E PUBLICAR ÁUDIO", primario = true, perigo = true) {
                     val caminho = MediaHelper.pararGravacaoAudio()
                     if (caminho != null) {
                         userRepo.adicionarAudio(evento.id, caminho, "00:15")
@@ -607,7 +607,7 @@ object EventMediaComponent {
                 }
                 layoutAudios.addView(btnParar)
             } else {
-                val btnGravar = UIComponents.criarBotao(context, "🎙️ GRAVAR NOVO ÁUDIO", primario = true) {
+                val btnGravar = UIComponents.criarBotao(context, "GRAVAR NOVO ÁUDIO", primario = true) {
                     if (!temPermissaoAudio) {
                         onPedirPermissaoAudio()
                     } else {

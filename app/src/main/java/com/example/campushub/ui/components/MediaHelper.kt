@@ -226,7 +226,7 @@ object MediaHelper {
         }
 
         val tvTitulo = TextView(context).apply {
-            text = "🎬 $titulo"
+            text = titulo
             textSize = 15f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)

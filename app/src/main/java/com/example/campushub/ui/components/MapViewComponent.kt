@@ -17,7 +17,8 @@ import org.maplibre.android.maps.Style
 
 object MapViewComponent {
 
-    private const val MAP_STYLE_URL = "https://demotiles.maplibre.org/style.json"
+    private const val MAP_STYLE_PRIMARY = "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json"
+    private const val MAP_STYLE_FALLBACK = "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
 
     fun criarMapaLocalizacao(
         context: Context,
@@ -81,23 +82,34 @@ object MapViewComponent {
                 }
 
                 mapView.getMapAsync { maplibreMap ->
-                    maplibreMap.setStyle(Style.Builder().fromUri(MAP_STYLE_URL)) { _ ->
-                        val pontoLatLng = LatLng(latitude, longitude)
-                        maplibreMap.moveCamera(
-                            CameraUpdateFactory.newCameraPosition(
-                                CameraPosition.Builder()
-                                    .target(pontoLatLng)
-                                    .zoom(zoom)
-                                    .build()
-                            )
-                        )
+                    fun carregarEstiloEPonto(styleUrl: String) {
+                        maplibreMap.setStyle(Style.Builder().fromUri(styleUrl)) { _ ->
+                            val pontoLatLng = LatLng(latitude, longitude)
+                            val cameraPosition = CameraPosition.Builder()
+                                .target(pontoLatLng)
+                                .zoom(zoom)
+                                .build()
 
-                        maplibreMap.addMarker(
-                            MarkerOptions()
-                                .position(pontoLatLng)
-                                .title(titulo)
-                                .snippet(subtitulo)
-                        )
+                            maplibreMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 1000)
+
+                            val marker = maplibreMap.addMarker(
+                                MarkerOptions()
+                                    .position(pontoLatLng)
+                                    .title(titulo)
+                                    .snippet(subtitulo)
+                            )
+                            if (titulo.isNotEmpty()) {
+                                maplibreMap.selectMarker(marker)
+                            }
+                        }
+                    }
+
+                    try {
+                        carregarEstiloEPonto(MAP_STYLE_PRIMARY)
+                    } catch (_: Throwable) {
+                        try {
+                            carregarEstiloEPonto(MAP_STYLE_FALLBACK)
+                        } catch (_: Throwable) {}
                     }
                 }
             } catch (_: Throwable) {}

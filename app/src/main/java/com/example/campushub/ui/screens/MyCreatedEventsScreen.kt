@@ -125,7 +125,7 @@ object MyCreatedEventsScreen {
         rowTop.addView(spacer)
 
         val tvDataBadge = TextView(context).apply {
-            text = "📅 ${evento.dataBadge}"
+            text = evento.dataBadge
             textSize = 11f
             typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.WHITE)
@@ -146,7 +146,7 @@ object MyCreatedEventsScreen {
         layoutInterno.addView(tvTitulo)
 
         val tvInfo = TextView(context).apply {
-            text = "🕒 ${evento.horario}  •  📍 ${evento.local}"
+            text = "${evento.horario}  •  ${evento.local}"
             textSize = 13f
             setTextColor(AppColors.COLOR_TEXT_MUTED)
             setPadding(0, UIComponents.dpToPx(context, 2), 0, UIComponents.dpToPx(context, 8))
@@ -177,7 +177,7 @@ object MyCreatedEventsScreen {
         rowBotoes.addView(btnEditar)
 
         if (!evento.encerrado) {
-            val btnEncerrar = UIComponents.criarBotao(context, "🏁", primario = false) {
+            val btnEncerrar = UIComponents.criarBotao(context, "Encerrar", primario = false) {
                 EventRepository.encerrarEvento(
                     evento.id,
                     onSuccess = {

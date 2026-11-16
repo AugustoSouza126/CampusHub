@@ -50,12 +50,35 @@ object CreateEventScreen {
 
         layout.addView(UIComponents.criarRotulo(context, "Categoria"))
         val categoriasLista = listOf("Acadêmico", "Workshop", "Hackathon", "Palestra", "Carreiras", "Segurança")
+        val adapterCat = object : ArrayAdapter<String>(
+            context,
+            android.R.layout.simple_spinner_item,
+            categoriasLista
+        ) {
+            override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                val v = super.getView(position, convertView, parent)
+                if (v is TextView) {
+                    v.setTextColor(AppColors.COLOR_TEXT_MAIN)
+                    v.textSize = 15f
+                    v.typeface = Typeface.DEFAULT_BOLD
+                }
+                return v
+            }
+
+            override fun getDropDownView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                val v = super.getDropDownView(position, convertView, parent)
+                if (v is TextView) {
+                    v.setTextColor(AppColors.COLOR_TEXT_MAIN)
+                    v.setBackgroundColor(AppColors.COLOR_CARD_BG)
+                    v.setPadding(32, 24, 32, 24)
+                }
+                return v
+            }
+        }
+        adapterCat.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+
         val spinnerCategoria = Spinner(context).apply {
-            adapter = ArrayAdapter(
-                context,
-                android.R.layout.simple_spinner_dropdown_item,
-                categoriasLista
-            )
+            adapter = adapterCat
             val index = categoriasLista.indexOf(eventoParaEditar?.categoria ?: "Acadêmico")
             if (index >= 0) setSelection(index)
             background = UIComponents.criarShape(context, AppColors.COLOR_CARD_BG, AppColors.COLOR_STROKE, 1, 8f)
@@ -93,7 +116,7 @@ object CreateEventScreen {
                 } catch (_: Exception) {}
             }
 
-            DatePickerDialog(
+            val dialog = DatePickerDialog(
                 context,
                 { _, year, month, dayOfMonth ->
                     val dateStr = String.format(Locale.getDefault(), "%02d/%02d/%04d", dayOfMonth, month + 1, year)
@@ -106,7 +129,9 @@ object CreateEventScreen {
                 cal.get(Calendar.YEAR),
                 cal.get(Calendar.MONTH),
                 cal.get(Calendar.DAY_OF_MONTH)
-            ).show()
+            )
+            dialog.datePicker.minDate = System.currentTimeMillis() - 1000
+            dialog.show()
         }
         inputData.setOnClickListener { abrirDatePicker() }
 
@@ -262,6 +287,16 @@ object CreateEventScreen {
                 inputLocal.requestFocus()
                 return@criarBotao
             }
+
+            try {
+                val sdfCompleto = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                val dataHoraEvento = sdfCompleto.parse("$data $horario")
+                val agora = java.util.Date()
+                if (dataHoraEvento != null && dataHoraEvento.before(agora) && !ehEncerrado) {
+                    Toast.makeText(context, "A data e o horário do evento não podem ser no passado.", Toast.LENGTH_LONG).show()
+                    return@criarBotao
+                }
+            } catch (_: Exception) {}
 
             val vagas = vagasStr.toIntOrNull() ?: 50
             val eventoId = eventoParaEditar?.id ?: (System.currentTimeMillis() % 1000000).toInt()

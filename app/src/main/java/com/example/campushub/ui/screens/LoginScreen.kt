@@ -1,15 +1,16 @@
 package com.example.campushub.ui.screens
 
 import android.content.Context
+import android.graphics.Typeface
 import android.text.InputType
 import android.util.Patterns
-import android.widget.ArrayAdapter
-import android.widget.LinearLayout
-import android.widget.Spinner
-import android.widget.Toast
+import android.view.View
+import android.view.ViewGroup
+import android.widget.*
 import com.example.campushub.data.repository.AuthRepository
 import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.components.UIComponents
+import com.example.campushub.ui.theme.AppColors
 
 object LoginScreen {
 
@@ -110,13 +111,46 @@ object LoginScreen {
         )
         layout.addView(inputConfirmarSenha)
 
+        layout.addView(UIComponents.criarRotulo(context, "Tipo de Conta (Perfil)"))
+
+        val rolesOptions = arrayOf("Aluno (Usuário Comum)", "Organizador de Eventos")
+        val adapterRole = object : ArrayAdapter<String>(
+            context,
+            android.R.layout.simple_spinner_item,
+            rolesOptions
+        ) {
+            override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                val v = super.getView(position, convertView, parent)
+                if (v is TextView) {
+                    v.setTextColor(AppColors.COLOR_TEXT_MAIN)
+                    v.textSize = 15f
+                    v.typeface = Typeface.DEFAULT_BOLD
+                }
+                return v
+            }
+
+            override fun getDropDownView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                val v = super.getDropDownView(position, convertView, parent)
+                if (v is TextView) {
+                    v.setTextColor(AppColors.COLOR_TEXT_MAIN)
+                    v.setBackgroundColor(AppColors.COLOR_CARD_BG)
+                    v.setPadding(32, 24, 32, 24)
+                }
+                return v
+            }
+        }
+        adapterRole.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+
         val spinnerRole = Spinner(context).apply {
-            adapter = ArrayAdapter(
-                context,
-                android.R.layout.simple_spinner_dropdown_item,
-                arrayOf("Aluno", "Organizador")
-            )
-            setPadding(UIComponents.dpToPx(context, 16), UIComponents.dpToPx(context, 14), UIComponents.dpToPx(context, 16), UIComponents.dpToPx(context, 14))
+            adapter = adapterRole
+            background = UIComponents.criarShape(context, AppColors.COLOR_CARD_BG, AppColors.COLOR_STROKE, 1, 8f)
+            setPadding(UIComponents.dpToPx(context, 16), UIComponents.dpToPx(context, 12), UIComponents.dpToPx(context, 16), UIComponents.dpToPx(context, 12))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, 0, 0, UIComponents.dpToPx(context, 12))
+            }
         }
         layout.addView(spinnerRole)
 
@@ -126,7 +160,7 @@ object LoginScreen {
             val email = inputEmail.text.toString().trim()
             val senha = inputSenha.text.toString()
             val confirmarSenha = inputConfirmarSenha.text.toString()
-            val selectedRole = if (spinnerRole.selectedItem.toString() == "Organizador") "ORGANIZADOR" else "ALUNO"
+            val selectedRole = if (spinnerRole.selectedItem.toString().contains("Organizador")) "ORGANIZADOR" else "ALUNO"
 
             if (nome.isEmpty()) {
                 Toast.makeText(context, "Digite seu nome completo.", Toast.LENGTH_SHORT).show()
@@ -137,6 +171,11 @@ object LoginScreen {
             if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
                 Toast.makeText(context, "Insira um e-mail válido.", Toast.LENGTH_SHORT).show()
                 inputEmail.requestFocus()
+                return@criarBotao
+            }
+
+            if (userRepo.getUsuarioEmail().equals(email, ignoreCase = true) && userRepo.getUsuarioEmail().isNotEmpty()) {
+                Toast.makeText(context, "Este e-mail já está cadastrado no aplicativo. Faça login.", Toast.LENGTH_LONG).show()
                 return@criarBotao
             }
 

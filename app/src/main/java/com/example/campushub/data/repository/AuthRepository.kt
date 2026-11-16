@@ -75,7 +75,12 @@ object AuthRepository {
                         onError("Erro ao registrar usuário.")
                     }
                 } else {
-                    val msg = task.exception?.localizedMessage ?: "Erro ao criar conta no Firebase."
+                    val exception = task.exception
+                    val msg = if (exception is com.google.firebase.auth.FirebaseAuthUserCollisionException || exception?.message?.contains("already in use") == true) {
+                        "Este e-mail já está cadastrado no sistema. Utilize outro e-mail ou faça login."
+                    } else {
+                        exception?.localizedMessage ?: "Erro ao criar conta no Firebase."
+                    }
                     onError(msg)
                 }
             }

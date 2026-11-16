@@ -171,6 +171,42 @@ object EventCard {
                 }
             }
             rowBadges.addView(tvBadge)
+        } else if (userRepo.isNaListaEspera(evento.id)) {
+            val posicao = userRepo.getPosicaoListaEspera(evento.id)
+            val tvBadgeEspera = TextView(context).apply {
+                text = "LISTA DE ESPERA (#$posicao)"
+                textSize = 11f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(Color.parseColor("#B45309"))
+                background = UIComponents.criarShape(context, Color.parseColor("#FEF3C7"), Color.TRANSPARENT, 0, 6f)
+                setPadding(dpToPx(6), dpToPx(2), dpToPx(6), dpToPx(2))
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, dpToPx(4), dpToPx(8), dpToPx(8))
+                }
+            }
+            rowBadges.addView(tvBadgeEspera)
+        } else {
+            val totalInscritos = userRepo.getTotalInscritos(evento.id)
+            if (totalInscritos >= evento.vagas && evento.vagas > 0) {
+                val tvBadgeEsgotado = TextView(context).apply {
+                    text = "VAGAS ESGOTADAS"
+                    textSize = 11f
+                    typeface = Typeface.DEFAULT_BOLD
+                    setTextColor(Color.parseColor("#B91C1C"))
+                    background = UIComponents.criarShape(context, Color.parseColor("#FEE2E2"), Color.TRANSPARENT, 0, 6f)
+                    setPadding(dpToPx(6), dpToPx(2), dpToPx(6), dpToPx(2))
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        setMargins(0, dpToPx(4), dpToPx(8), dpToPx(8))
+                    }
+                }
+                rowBadges.addView(tvBadgeEsgotado)
+            }
         }
 
         val (media, total) = userRepo.getMediaAvaliacoes(evento.id)

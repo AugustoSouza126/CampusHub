@@ -43,16 +43,99 @@ class UserPreferencesRepository(context: Context) {
         return set?.toMutableSet() ?: mutableSetOf()
     }
 
+    fun getTotalInscritos(eventoId: Int): Int {
+        val totalSalvo = prefs.getInt("total_inscritos_$eventoId", -1)
+        if (totalSalvo >= 0) return totalSalvo
+        return if (isInscrito(eventoId)) 1 else 0
+    }
+
+    fun setTotalInscritos(eventoId: Int, total: Int) {
+        prefs.edit().putInt("total_inscritos_$eventoId", total.coerceAtLeast(0)).apply()
+    }
+
+    fun getListaEsperaDoEvento(eventoId: Int): MutableList<String> {
+        val jsonStr = prefs.getString("lista_espera_evento_$eventoId", "[]") ?: "[]"
+        val lista = mutableListOf<String>()
+        try {
+            val jsonArray = JSONArray(jsonStr)
+            for (i in 0 until jsonArray.length()) {
+                lista.add(jsonArray.getString(i))
+            }
+        } catch (_: Exception) {}
+        return lista
+    }
+
+    private fun salvarListaEsperaDoEvento(eventoId: Int, lista: List<String>) {
+        val jsonArray = JSONArray()
+        for (email in lista) {
+            jsonArray.put(email)
+        }
+        prefs.edit().putString("lista_espera_evento_$eventoId", jsonArray.toString()).apply()
+    }
+
+    fun entrarListaEspera(eventoId: Int) {
+        val email = getUsuarioEmail().ifEmpty { "aluno_espera@campus.edu.br" }
+        val lista = getListaEsperaDoEvento(eventoId)
+        if (!lista.contains(email)) {
+            lista.add(email)
+            salvarListaEsperaDoEvento(eventoId, lista)
+        }
+    }
+
+    fun sairListaEspera(eventoId: Int) {
+        val email = getUsuarioEmail().ifEmpty { "aluno_espera@campus.edu.br" }
+        val lista = getListaEsperaDoEvento(eventoId)
+        lista.remove(email)
+        salvarListaEsperaDoEvento(eventoId, lista)
+    }
+
+    fun isNaListaEspera(eventoId: Int): Boolean {
+        val email = getUsuarioEmail().ifEmpty { "aluno_espera@campus.edu.br" }
+        return getListaEsperaDoEvento(eventoId).contains(email)
+    }
+
+    fun getPosicaoListaEspera(eventoId: Int): Int {
+        val email = getUsuarioEmail().ifEmpty { "aluno_espera@campus.edu.br" }
+        val lista = getListaEsperaDoEvento(eventoId)
+        val index = lista.indexOf(email)
+        return if (index >= 0) index + 1 else 0
+    }
+
     fun salvarInscricao(eventoId: Int) {
         val inscricoes = getInscricoes()
         inscricoes.add(eventoId.toString())
         prefs.edit().putStringSet("user_inscricoes", inscricoes).apply()
+
+        val totalAtual = getTotalInscritos(eventoId)
+        setTotalInscritos(eventoId, totalAtual + 1)
+        sairListaEspera(eventoId)
     }
 
     fun removerInscricao(eventoId: Int) {
         val inscricoes = getInscricoes()
         inscricoes.remove(eventoId.toString())
         prefs.edit().putStringSet("user_inscricoes", inscricoes).apply()
+
+        val totalAtual = getTotalInscritos(eventoId)
+        val novoTotal = (totalAtual - 1).coerceAtLeast(0)
+        setTotalInscritos(eventoId, novoTotal)
+
+        promoverProximoDaListaEspera(eventoId)
+    }
+
+    private fun promoverProximoDaListaEspera(eventoId: Int) {
+        val lista = getListaEsperaDoEvento(eventoId)
+        if (lista.isNotEmpty()) {
+            val proximoEmail = lista.removeAt(0)
+            salvarListaEsperaDoEvento(eventoId, lista)
+
+            if (proximoEmail.equals(getUsuarioEmail(), ignoreCase = true) && getUsuarioEmail().isNotEmpty()) {
+                salvarInscricao(eventoId)
+            } else {
+                val totalAtual = getTotalInscritos(eventoId)
+                setTotalInscritos(eventoId, totalAtual + 1)
+            }
+        }
     }
 
     fun isInscrito(eventoId: Int): Boolean {
