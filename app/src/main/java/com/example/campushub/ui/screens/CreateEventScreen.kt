@@ -1,9 +1,9 @@
+// Formulário para criação e edição de eventos por organizadores.
 package com.example.campushub.ui.screens
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
-import android.graphics.Color
 import android.graphics.Typeface
 import android.text.InputType
 import android.view.View
@@ -40,9 +40,6 @@ object CreateEventScreen {
         var imagemUrlSalva = eventoParaEditar?.imagemUrl ?: ""
         var dataBadgeCalculada = eventoParaEditar?.dataBadge ?: ""
 
-        // =========================================================
-        // SEÇÃO 1: INFORMAÇÕES BÁSICAS
-        // =========================================================
         layout.addView(UIComponents.criarRotulo(context, "Informações Básicas"))
 
         val inputTitulo = UIComponents.criarCampoTexto(context, "Título do Evento (Ex: Workshop Android)", valorInicial = eventoParaEditar?.titulo ?: "")
@@ -95,9 +92,6 @@ object CreateEventScreen {
         val inputDescricao = UIComponents.criarCampoTexto(context, "Descrição e programação do evento...", valorInicial = eventoParaEditar?.descricao ?: "")
         layout.addView(inputDescricao)
 
-        // =========================================================
-        // SEÇÃO 2: DATA E HORÁRIO
-        // =========================================================
         layout.addView(UIComponents.criarRotulo(context, "Data e Horário"))
 
         val inputData = UIComponents.criarCampoTexto(context, "Data (Clique para abrir o calendário)", valorInicial = eventoParaEditar?.data ?: "").apply {
@@ -166,9 +160,6 @@ object CreateEventScreen {
         }
         inputHorario.setOnClickListener { abrirTimePicker() }
 
-        // =========================================================
-        // SEÇÃO 3: LOCALIZAÇÃO
-        // =========================================================
         layout.addView(UIComponents.criarRotulo(context, "Localização"))
 
         val inputLocal = UIComponents.criarCampoTexto(context, "Local / Prédio (Ex: Auditório Central)", valorInicial = eventoParaEditar?.local ?: "")
@@ -194,9 +185,6 @@ object CreateEventScreen {
         )
         layout.addView(mapaPreview)
 
-        // =========================================================
-        // SEÇÃO 4: DETALHES E IMAGEM DE CAPA
-        // =========================================================
         layout.addView(UIComponents.criarRotulo(context, "Detalhes e Imagem"))
 
         val inputVagas = UIComponents.criarCampoTexto(context, "Quantidade de Vagas (Ex: 50)", InputType.TYPE_CLASS_NUMBER, valorInicial = if (ehEdicao) eventoParaEditar?.vagas.toString() else "")
@@ -226,9 +214,6 @@ object CreateEventScreen {
         }
         layout.addView(btnEscolherFoto)
 
-        // =========================================================
-        // SEÇÃO 5: PUBLICAÇÃO
-        // =========================================================
         layout.addView(UIComponents.criarRotulo(context, "Situação"))
 
         val checkEncerrado = CheckBox(context).apply {

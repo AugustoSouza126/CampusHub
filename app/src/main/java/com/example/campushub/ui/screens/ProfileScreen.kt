@@ -1,16 +1,19 @@
+// Tela de exibição e edição do perfil acadêmico e permissão do usuário.
 package com.example.campushub.ui.screens
 
 import android.content.Context
+import android.graphics.Color
 import android.graphics.Typeface
 import android.text.InputType
 import android.util.Patterns
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.cardview.widget.CardView
 import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.components.UIComponents
 import com.example.campushub.ui.theme.AppColors
+import com.google.android.material.button.MaterialButton
+import java.util.Locale
 
 object ProfileScreen {
 
@@ -32,9 +35,9 @@ object ProfileScreen {
             orientation = LinearLayout.VERTICAL
         }
 
-        fun criarCampoPerfilView(rotulo: String, valor: String) {
+        fun criarCampoPerfilView(icone: String, rotulo: String, valor: String) {
             val tvRotulo = TextView(context).apply {
-                text = rotulo
+                text = "$icone  $rotulo"
                 textSize = 12f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(AppColors.COLOR_TEXT_MUTED)
@@ -52,9 +55,11 @@ object ProfileScreen {
             innerPerfil.addView(tvValor)
         }
 
-        criarCampoPerfilView("Nome Completo", userRepo.getUsuarioNome())
-        criarCampoPerfilView("Matrícula", userRepo.getUsuarioMatricula())
-        criarCampoPerfilView("E-mail Institucional", userRepo.getUsuarioEmail())
+        val perfilRotulo = if (userRepo.isOrganizador()) "📋 Organizador" else "🎓 Aluno"
+        criarCampoPerfilView("🎭", "Perfil de Acesso", perfilRotulo)
+        criarCampoPerfilView("👤", "Nome Completo", userRepo.getUsuarioNome())
+        criarCampoPerfilView("📄", "Matrícula", userRepo.getUsuarioMatricula())
+        criarCampoPerfilView("✉️", "E-mail Institucional", userRepo.getUsuarioEmail())
 
         cardPerfil.addView(innerPerfil)
 
@@ -71,9 +76,11 @@ object ProfileScreen {
             onEditarPerfil()
         })
 
-        layout.addView(UIComponents.criarBotao(context, "EVENTOS CRIADOS POR MIM", primario = false) {
-            onVerEventosCriados()
-        })
+        if (userRepo.isOrganizador()) {
+            layout.addView(UIComponents.criarBotao(context, "📢 EVENTOS CRIADOS POR MIM", primario = false) {
+                onVerEventosCriados()
+            })
+        }
 
         layout.addView(UIComponents.criarBotao(context, "SAIR DA CONTA", primario = false) {
             onDeslogar()
@@ -89,18 +96,74 @@ object ProfileScreen {
     ) {
         layout.addView(UIComponents.criarHeaderBar(context, "Editar Perfil", "Atualize seus dados cadastrais."))
 
+        var perfilSelecionado = userRepo.getUsuarioRole()
+
+        layout.addView(UIComponents.criarRotulo(context, "Perfil de Acesso"))
+        val rowPerfil = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            weightSum = 2f
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                UIComponents.dpToPx(context, 44)
+            ).apply {
+                setMargins(0, 0, 0, UIComponents.dpToPx(context, 8))
+            }
+        }
+
+        val btnAluno = UIComponents.criarButtonInstance(context).apply {
+            text = "🎓 ALUNO"
+            textSize = 13f
+            typeface = Typeface.DEFAULT_BOLD
+            isAllCaps = false
+            if (this is MaterialButton) cornerRadius = UIComponents.dpToPx(context, 10)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f).apply {
+                setMargins(0, 0, UIComponents.dpToPx(context, 4), 0)
+            }
+        }
+
+        val btnOrganizador = UIComponents.criarButtonInstance(context).apply {
+            text = "📋 ORGANIZADOR"
+            textSize = 13f
+            typeface = Typeface.DEFAULT_BOLD
+            isAllCaps = false
+            if (this is MaterialButton) cornerRadius = UIComponents.dpToPx(context, 10)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f).apply {
+                setMargins(UIComponents.dpToPx(context, 4), 0, 0, 0)
+            }
+        }
+
+        fun atualizarBotoesPerfil() {
+            if (perfilSelecionado == "ALUNO") {
+                btnAluno.background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 10f)
+                btnAluno.setTextColor(Color.WHITE)
+                btnOrganizador.background = UIComponents.criarShape(context, Color.WHITE, AppColors.COLOR_STROKE, 1, 10f)
+                btnOrganizador.setTextColor(AppColors.COLOR_TEXT_MUTED)
+            } else {
+                btnOrganizador.background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 10f)
+                btnOrganizador.setTextColor(Color.WHITE)
+                btnAluno.background = UIComponents.criarShape(context, Color.WHITE, AppColors.COLOR_STROKE, 1, 10f)
+                btnAluno.setTextColor(AppColors.COLOR_TEXT_MUTED)
+            }
+        }
+
+        btnAluno.setOnClickListener {
+            perfilSelecionado = "ALUNO"
+            atualizarBotoesPerfil()
+        }
+
+        btnOrganizador.setOnClickListener {
+            perfilSelecionado = "ORGANIZADOR"
+            atualizarBotoesPerfil()
+        }
+
+        atualizarBotoesPerfil()
+        rowPerfil.addView(btnAluno)
+        rowPerfil.addView(btnOrganizador)
+        layout.addView(rowPerfil)
+
         layout.addView(UIComponents.criarRotulo(context, "Nome completo"))
         val inputNome = UIComponents.criarCampoTexto(context, "Nome completo", valorInicial = userRepo.getUsuarioNome())
         layout.addView(inputNome)
-
-        layout.addView(UIComponents.criarRotulo(context, "Matrícula"))
-        val inputMatricula = UIComponents.criarCampoTexto(
-            context,
-            "Matrícula",
-            inputType = InputType.TYPE_CLASS_NUMBER,
-            valorInicial = userRepo.getUsuarioMatricula()
-        )
-        layout.addView(inputMatricula)
 
         layout.addView(UIComponents.criarRotulo(context, "E-mail"))
         val inputEmail = UIComponents.criarCampoTexto(
@@ -113,10 +176,12 @@ object ProfileScreen {
 
         layout.addView(UIComponents.criarBotao(context, "SALVAR ALTERAÇÕES") {
             val novoNome = inputNome.text.toString().trim()
-            val novaMatricula = inputMatricula.text.toString().trim()
             val novoEmail = inputEmail.text.toString().trim()
+            val matricula = userRepo.getUsuarioMatricula().ifEmpty {
+                "2026" + String.format(Locale.getDefault(), "%04d", (1000..9999).random())
+            }
 
-            if (novoNome.isEmpty() || novaMatricula.isEmpty() || novoEmail.isEmpty()) {
+            if (novoNome.isEmpty() || novoEmail.isEmpty()) {
                 Toast.makeText(context, "Todos os campos devem ser preenchidos.", Toast.LENGTH_SHORT).show()
                 return@criarBotao
             }
@@ -126,7 +191,7 @@ object ProfileScreen {
                 return@criarBotao
             }
 
-            userRepo.salvarUsuario(novoNome, novaMatricula, novoEmail, userRepo.getUsuarioSenha())
+            userRepo.salvarUsuario(novoNome, matricula, novoEmail, userRepo.getUsuarioSenha(), perfilSelecionado)
             Toast.makeText(context, "Perfil atualizado com sucesso!", Toast.LENGTH_SHORT).show()
             onPerfilAtualizado()
         })

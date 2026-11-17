@@ -1,3 +1,4 @@
+// Tela de gerenciamento de eventos criados por organizadores com indicador de vagas e check-in.
 package com.example.campushub.ui.screens
 
 import android.content.Context
@@ -6,7 +7,6 @@ import android.graphics.Typeface
 import android.view.Gravity
 import android.view.View
 import android.widget.*
-import androidx.cardview.widget.CardView
 import com.example.campushub.data.model.Event
 import com.example.campushub.data.repository.EventRepository
 import com.example.campushub.data.repository.UserPreferencesRepository
@@ -31,6 +31,18 @@ object MyCreatedEventsScreen {
             orientation = LinearLayout.VERTICAL
         }
         layout.addView(containerLista)
+
+        if (!userRepo.isOrganizador()) {
+            val tvAviso = TextView(context).apply {
+                text = "Apenas usuários com perfil de Organizador podem criar e gerenciar eventos."
+                textSize = 15f
+                setTextColor(AppColors.COLOR_TEXT_MUTED)
+                setPadding(0, UIComponents.dpToPx(context, 20), 0, UIComponents.dpToPx(context, 20))
+                gravity = Gravity.CENTER
+            }
+            containerLista.addView(tvAviso)
+            return
+        }
 
         fun carregarLista() {
             containerLista.removeAllViews()
@@ -145,8 +157,12 @@ object MyCreatedEventsScreen {
         }
         layoutInterno.addView(tvTitulo)
 
+        val inscritos = userRepo.getInscritosDoEvento(evento.id)
+        val totalInscritos = userRepo.getTotalInscritos(evento.id).coerceAtLeast(inscritos.size)
+        val checkIns = inscritos.count { it.checkedIn }
+
         val tvInfo = TextView(context).apply {
-            text = "${evento.horario}  •  ${evento.local}"
+            text = "${evento.horario}  •  ${evento.local}\n👥 $totalInscritos / ${evento.vagas} inscritos  •  Check-ins: $checkIns"
             textSize = 13f
             setTextColor(AppColors.COLOR_TEXT_MUTED)
             setPadding(0, UIComponents.dpToPx(context, 2), 0, UIComponents.dpToPx(context, 8))

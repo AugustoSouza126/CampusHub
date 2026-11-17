@@ -1,3 +1,4 @@
+// Tela de detalhes do evento, inscrições, mídias, check-in e acompanhamento de inscritos para organizadores.
 package com.example.campushub.ui.screens
 
 import android.content.Context
@@ -164,7 +165,7 @@ object EventDetail {
         }
         layout.addView(cardMapa, paramsCardMapa)
 
-        val ehCriador = evento.criadorEmail.equals(userRepo.getUsuarioEmail(), ignoreCase = true) && userRepo.getUsuarioEmail().isNotEmpty() && userRepo.isOrganizador()
+        val ehCriador = userRepo.isOrganizador() && evento.criadorEmail.equals(userRepo.getUsuarioEmail(), ignoreCase = true) && userRepo.getUsuarioEmail().isNotEmpty()
         if (ehCriador) {
             val cardCriador = UIComponents.criarCardView(context, 16f, 4f, 16, Color.parseColor("#FEF3C7"))
 
@@ -244,6 +245,113 @@ object EventDetail {
             }
 
             layout.addView(cardCriador, paramsCriador)
+
+            val cardAcompanhamento = UIComponents.criarCardView(context, 16f, 4f, 16, AppColors.COLOR_CARD_BG)
+            val layoutAcompanhamento = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+            }
+
+            val tvAcompTitulo = TextView(context).apply {
+                text = "📊 Acompanhamento de Inscritos & Check-in"
+                textSize = 16f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(AppColors.COLOR_TEXT_MAIN)
+                setPadding(0, 0, 0, UIComponents.dpToPx(context, 8))
+            }
+            layoutAcompanhamento.addView(tvAcompTitulo)
+
+            val inscritosLista = userRepo.getInscritosDoEvento(evento.id)
+            val totalInscritos = userRepo.getTotalInscritos(evento.id).coerceAtLeast(inscritosLista.size)
+            val totalCheckIns = inscritosLista.count { it.checkedIn }
+            val vagasTotais = evento.vagas
+
+            val tvMetrics = TextView(context).apply {
+                text = "👥 Vagas Ocupadas: $totalInscritos / $vagasTotais (${if (vagasTotais > 0) (totalInscritos * 100 / vagasTotais) else 0}%)\n✅ Check-ins Realizados: $totalCheckIns / ${inscritosLista.size.coerceAtLeast(totalInscritos)} alunos"
+                textSize = 14f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(AppColors.COLOR_TEXT_MAIN)
+                setPadding(0, 0, 0, UIComponents.dpToPx(context, 10))
+            }
+            layoutAcompanhamento.addView(tvMetrics)
+
+            val tvSubInscritos = TextView(context).apply {
+                text = "Lista de Alunos Inscritos:"
+                textSize = 13f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(AppColors.COLOR_TEXT_MUTED)
+                setPadding(0, 0, 0, UIComponents.dpToPx(context, 6))
+            }
+            layoutAcompanhamento.addView(tvSubInscritos)
+
+            if (inscritosLista.isEmpty()) {
+                val tvSemInscritos = TextView(context).apply {
+                    text = "Nenhum aluno inscrito até o momento."
+                    textSize = 13f
+                    setTextColor(AppColors.COLOR_TEXT_MUTED)
+                    setPadding(0, UIComponents.dpToPx(context, 4), 0, UIComponents.dpToPx(context, 8))
+                }
+                layoutAcompanhamento.addView(tvSemInscritos)
+            } else {
+                inscritosLista.forEach { sub ->
+                    val cardAluno = UIComponents.criarCardView(context, 10f, 1f, 10, Color.parseColor("#F8FAFC")).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            setMargins(0, 0, 0, UIComponents.dpToPx(context, 6))
+                        }
+                    }
+
+                    val rowAluno = LinearLayout(context).apply {
+                        orientation = LinearLayout.VERTICAL
+                    }
+
+                    val tvAlunoInfo = TextView(context).apply {
+                        text = "👤 ${sub.alunoNome}\n📄 Matrícula: ${sub.alunoMatricula}  •  ✉️ ${sub.alunoEmail}\n📅 Inscrito em: ${sub.dataInscricao}"
+                        textSize = 13f
+                        setTextColor(AppColors.COLOR_TEXT_MAIN)
+                        setPadding(0, 0, 0, UIComponents.dpToPx(context, 4))
+                    }
+                    rowAluno.addView(tvAlunoInfo)
+
+                    val statusCheckIn = if (sub.checkedIn) "✅ Check-in Realizado" else "⏳ Check-in Pendente"
+                    val tvBadgeCheck = TextView(context).apply {
+                        text = statusCheckIn
+                        textSize = 12f
+                        typeface = Typeface.DEFAULT_BOLD
+                        setTextColor(if (sub.checkedIn) Color.parseColor("#059669") else Color.parseColor("#D97706"))
+                        setPadding(0, 0, 0, UIComponents.dpToPx(context, 4))
+                    }
+                    rowAluno.addView(tvBadgeCheck)
+
+                    val btnToggleCheckIn = UIComponents.criarBotao(
+                        context = context,
+                        texto = if (sub.checkedIn) "CANCELAR CHECK-IN" else "CONFIRMAR CHECK-IN",
+                        primario = !sub.checkedIn
+                    ) {
+                        userRepo.alternarCheckInAluno(evento.id, sub.alunoEmail)
+                        Toast.makeText(context, "Status de check-in alterado para ${sub.alunoNome}!", Toast.LENGTH_SHORT).show()
+                        atualizarManterPosicao()
+                    }.apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            UIComponents.dpToPx(context, 38)
+                        )
+                    }
+                    rowAluno.addView(btnToggleCheckIn)
+
+                    cardAluno.addView(rowAluno)
+                    layoutAcompanhamento.addView(cardAluno)
+                }
+            }
+
+            cardAcompanhamento.addView(layoutAcompanhamento)
+            layout.addView(cardAcompanhamento, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(0, UIComponents.dpToPx(context, 8), 0, UIComponents.dpToPx(context, 12))
+            })
         }
 
         val eFavorito = userRepo.isFavorito(evento.id)
@@ -266,16 +374,25 @@ object EventDetail {
             val naListaEspera = userRepo.isNaListaEspera(evento.id)
             val totalInscritos = userRepo.getTotalInscritos(evento.id)
             val capacidadeEsgotada = (totalInscritos >= evento.vagas && evento.vagas > 0)
+            val alunoCheckedIn = userRepo.isCheckedIn(evento.id)
 
             if (inscrito) {
                 val tvStatus = TextView(context).apply {
-                    text = "Sua inscrição está confirmada neste evento."
+                    text = if (alunoCheckedIn) "✅ Sua inscrição e check-in estão confirmados neste evento!" else "Sua inscrição está confirmada neste evento."
                     textSize = 14f
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(AppColors.COLOR_GREEN_TEXT)
                     setPadding(0, UIComponents.dpToPx(context, 16), 0, UIComponents.dpToPx(context, 8))
                 }
                 layout.addView(tvStatus)
+
+                if (!alunoCheckedIn) {
+                    layout.addView(UIComponents.criarBotao(context, "📍 MARCAR MEU CHECK-IN NO EVENTO", primario = true) {
+                        userRepo.alternarCheckInAluno(evento.id, userRepo.getUsuarioEmail())
+                        Toast.makeText(context, "Check-in realizado com sucesso!", Toast.LENGTH_SHORT).show()
+                        atualizarManterPosicao()
+                    })
+                }
 
                 layout.addView(UIComponents.criarBotao(context, "CANCELAR INSCRIÇÃO", primario = false, perigo = true) {
                     userRepo.removerInscricao(evento.id)
@@ -574,7 +691,7 @@ object EventDetail {
                 }
 
                 val tvAutor = TextView(context).apply {
-            text = com.autorNome
+                    text = com.autorNome
                     textSize = 14f
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(AppColors.COLOR_TEXT_MAIN)

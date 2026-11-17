@@ -1,16 +1,19 @@
+// Tela de autenticação e cadastro de usuários com geração de matrícula em segundo plano.
 package com.example.campushub.ui.screens
 
 import android.content.Context
+import android.graphics.Color
 import android.graphics.Typeface
 import android.text.InputType
 import android.util.Patterns
-import android.view.View
-import android.view.ViewGroup
-import android.widget.*
+import android.widget.LinearLayout
+import android.widget.Toast
 import com.example.campushub.data.repository.AuthRepository
 import com.example.campushub.data.repository.UserPreferencesRepository
 import com.example.campushub.ui.components.UIComponents
 import com.example.campushub.ui.theme.AppColors
+import com.google.android.material.button.MaterialButton
+import java.util.Locale
 
 object LoginScreen {
 
@@ -49,12 +52,17 @@ object LoginScreen {
                 email = emailDigitado,
                 senha = senhaDigitada,
                 onSuccess = { user ->
+                    val emailLogado = user.email ?: emailDigitado
+                    val roleSalva = userRepo.getUsuarioRole(emailLogado)
+                    val matriculaSalva = userRepo.getUsuarioMatricula().ifEmpty {
+                        "2026" + String.format(Locale.getDefault(), "%04d", (1000..9999).random())
+                    }
                     userRepo.salvarUsuario(
                         nome = user.displayName ?: userRepo.getUsuarioNome(),
-                        matricula = userRepo.getUsuarioMatricula().ifEmpty { (10000000..99999999).random().toString() },
-                        email = user.email ?: emailDigitado,
+                        matricula = matriculaSalva,
+                        email = emailLogado,
                         senha = senhaDigitada,
-                        role = userRepo.getUsuarioRole()
+                        role = roleSalva
                     )
                     Toast.makeText(context, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show()
                     onLoginSucesso()
@@ -82,6 +90,71 @@ object LoginScreen {
         onVoltar: () -> Unit
     ) {
         layout.addView(UIComponents.criarHeaderBar(context, "Criar Cadastro", "Preencha suas informações para criar a conta."))
+
+        var perfilSelecionado = "ALUNO"
+
+        layout.addView(UIComponents.criarRotulo(context, "Perfil de Acesso"))
+        val rowPerfil = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            weightSum = 2f
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                UIComponents.dpToPx(context, 44)
+            ).apply {
+                setMargins(0, 0, 0, UIComponents.dpToPx(context, 8))
+            }
+        }
+
+        val btnAluno = UIComponents.criarButtonInstance(context).apply {
+            text = "🎓 ALUNO"
+            textSize = 13f
+            typeface = Typeface.DEFAULT_BOLD
+            isAllCaps = false
+            if (this is MaterialButton) cornerRadius = UIComponents.dpToPx(context, 10)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f).apply {
+                setMargins(0, 0, UIComponents.dpToPx(context, 4), 0)
+            }
+        }
+
+        val btnOrganizador = UIComponents.criarButtonInstance(context).apply {
+            text = "📋 ORGANIZADOR"
+            textSize = 13f
+            typeface = Typeface.DEFAULT_BOLD
+            isAllCaps = false
+            if (this is MaterialButton) cornerRadius = UIComponents.dpToPx(context, 10)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f).apply {
+                setMargins(UIComponents.dpToPx(context, 4), 0, 0, 0)
+            }
+        }
+
+        fun atualizarBotoesPerfil() {
+            if (perfilSelecionado == "ALUNO") {
+                btnAluno.background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 10f)
+                btnAluno.setTextColor(Color.WHITE)
+                btnOrganizador.background = UIComponents.criarShape(context, Color.WHITE, AppColors.COLOR_STROKE, 1, 10f)
+                btnOrganizador.setTextColor(AppColors.COLOR_TEXT_MUTED)
+            } else {
+                btnOrganizador.background = UIComponents.criarShape(context, AppColors.COLOR_PRIMARY, Color.TRANSPARENT, 0, 10f)
+                btnOrganizador.setTextColor(Color.WHITE)
+                btnAluno.background = UIComponents.criarShape(context, Color.WHITE, AppColors.COLOR_STROKE, 1, 10f)
+                btnAluno.setTextColor(AppColors.COLOR_TEXT_MUTED)
+            }
+        }
+
+        btnAluno.setOnClickListener {
+            perfilSelecionado = "ALUNO"
+            atualizarBotoesPerfil()
+        }
+
+        btnOrganizador.setOnClickListener {
+            perfilSelecionado = "ORGANIZADOR"
+            atualizarBotoesPerfil()
+        }
+
+        atualizarBotoesPerfil()
+        rowPerfil.addView(btnAluno)
+        rowPerfil.addView(btnOrganizador)
+        layout.addView(rowPerfil)
 
         layout.addView(UIComponents.criarRotulo(context, "Nome completo"))
         val inputNome = UIComponents.criarCampoTexto(context, "Ex: João da Silva")
@@ -111,56 +184,11 @@ object LoginScreen {
         )
         layout.addView(inputConfirmarSenha)
 
-        layout.addView(UIComponents.criarRotulo(context, "Tipo de Conta (Perfil)"))
-
-        val rolesOptions = arrayOf("Aluno (Usuário Comum)", "Organizador de Eventos")
-        val adapterRole = object : ArrayAdapter<String>(
-            context,
-            android.R.layout.simple_spinner_item,
-            rolesOptions
-        ) {
-            override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
-                val v = super.getView(position, convertView, parent)
-                if (v is TextView) {
-                    v.setTextColor(AppColors.COLOR_TEXT_MAIN)
-                    v.textSize = 15f
-                    v.typeface = Typeface.DEFAULT_BOLD
-                }
-                return v
-            }
-
-            override fun getDropDownView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
-                val v = super.getDropDownView(position, convertView, parent)
-                if (v is TextView) {
-                    v.setTextColor(AppColors.COLOR_TEXT_MAIN)
-                    v.setBackgroundColor(AppColors.COLOR_CARD_BG)
-                    v.setPadding(32, 24, 32, 24)
-                }
-                return v
-            }
-        }
-        adapterRole.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-
-        val spinnerRole = Spinner(context).apply {
-            adapter = adapterRole
-            background = UIComponents.criarShape(context, AppColors.COLOR_CARD_BG, AppColors.COLOR_STROKE, 1, 8f)
-            setPadding(UIComponents.dpToPx(context, 16), UIComponents.dpToPx(context, 12), UIComponents.dpToPx(context, 16), UIComponents.dpToPx(context, 12))
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(0, 0, 0, UIComponents.dpToPx(context, 12))
-            }
-        }
-        layout.addView(spinnerRole)
-
         layout.addView(UIComponents.criarBotao(context, "FINALIZAR CADASTRO") {
             val nome = inputNome.text.toString().trim()
-            val matricula = (10000000..99999999).random().toString()
             val email = inputEmail.text.toString().trim()
             val senha = inputSenha.text.toString()
             val confirmarSenha = inputConfirmarSenha.text.toString()
-            val selectedRole = if (spinnerRole.selectedItem.toString().contains("Organizador")) "ORGANIZADOR" else "ALUNO"
 
             if (nome.isEmpty()) {
                 Toast.makeText(context, "Digite seu nome completo.", Toast.LENGTH_SHORT).show()
@@ -171,11 +199,6 @@ object LoginScreen {
             if (email.isEmpty() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
                 Toast.makeText(context, "Insira um e-mail válido.", Toast.LENGTH_SHORT).show()
                 inputEmail.requestFocus()
-                return@criarBotao
-            }
-
-            if (userRepo.getUsuarioEmail().equals(email, ignoreCase = true) && userRepo.getUsuarioEmail().isNotEmpty()) {
-                Toast.makeText(context, "Este e-mail já está cadastrado no aplicativo. Faça login.", Toast.LENGTH_LONG).show()
                 return@criarBotao
             }
 
@@ -191,12 +214,14 @@ object LoginScreen {
                 return@criarBotao
             }
 
+            val matriculaAutomatica = "2026" + String.format(Locale.getDefault(), "%04d", (1000..9999).random())
+
             AuthRepository.cadastrarUsuario(
                 email = email,
                 senha = senha,
                 nome = nome,
                 onSuccess = { _ ->
-                    userRepo.salvarUsuario(nome, matricula, email, senha, selectedRole)
+                    userRepo.salvarUsuario(nome, matriculaAutomatica, email, senha, perfilSelecionado)
                     Toast.makeText(context, "Conta criada com sucesso no Firebase!", Toast.LENGTH_SHORT).show()
                     onCadastroSucesso()
                 },

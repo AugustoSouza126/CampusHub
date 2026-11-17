@@ -1,3 +1,4 @@
+// Activity principal para controle de navegação e gerenciamento de telas da aplicação.
 package com.example.campushub
 
 import android.content.pm.PackageManager
@@ -444,13 +445,12 @@ class MainActivity : AppCompatActivity() {
         telaAtual = "EDITAR_PERFIL"
         val (_, layout) = criarTelaBase(exibirBottomNav = true, abaAtiva = "PERFIL")
 
-        ProfileScreen.construirTelaPerfil(
+        ProfileScreen.construirTelaEditarPerfil(
             context = this,
             layout = layout,
             userRepo = userRepo,
-            onEditarPerfil = { mostrarEditarPerfil() },
-            onVerEventosCriados = { mostrarEventosCriados() },
-            onDeslogar = { deslogarUsuario() }
+            onPerfilAtualizado = { mostrarPerfil() },
+            onCancelar = { mostrarPerfil() }
         )
     }
 }

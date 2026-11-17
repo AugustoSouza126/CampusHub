@@ -1,3 +1,4 @@
+// Repositório de preferências do usuário para controle de perfil por e-mail, inscrições, check-in e mídias.
 package com.example.campushub.data.repository
 
 import android.content.Context
@@ -6,6 +7,7 @@ import com.example.campushub.data.model.EventAudio
 import com.example.campushub.data.model.EventComment
 import com.example.campushub.data.model.EventPhoto
 import com.example.campushub.data.model.EventRating
+import com.example.campushub.data.model.EventSubscription
 import com.example.campushub.data.model.EventVideo
 import org.json.JSONArray
 import org.json.JSONObject
@@ -21,20 +23,40 @@ class UserPreferencesRepository(context: Context) {
         context.getSharedPreferences("campushub_prefs", Context.MODE_PRIVATE)
 
     fun salvarUsuario(nome: String, matricula: String, email: String, senha: String, role: String = "ALUNO") {
-        prefs.edit()
+        val emailKey = email.lowercase(Locale.getDefault()).trim()
+        val editor = prefs.edit()
             .putString("user_name", nome)
             .putString("user_matricula", matricula)
             .putString("user_email", email)
             .putString("user_password", senha)
             .putString("user_role", role)
-            .apply()
+        if (emailKey.isNotEmpty()) {
+            editor.putString("user_role_$emailKey", role)
+        }
+        editor.apply()
     }
 
     fun getUsuarioNome(): String = prefs.getString("user_name", "") ?: ""
     fun getUsuarioMatricula(): String = prefs.getString("user_matricula", "") ?: ""
     fun getUsuarioEmail(): String = prefs.getString("user_email", "") ?: ""
     fun getUsuarioSenha(): String = prefs.getString("user_password", "") ?: ""
-    fun getUsuarioRole(): String = prefs.getString("user_role", "ALUNO") ?: "ALUNO"
+
+    fun getUsuarioRole(email: String = getUsuarioEmail()): String {
+        val emailKey = email.lowercase(Locale.getDefault()).trim()
+        val nomeKey = getUsuarioNome().lowercase(Locale.getDefault()).trim()
+        if (emailKey.isNotEmpty()) {
+            val roleByEmail = prefs.getString("user_role_$emailKey", null)
+            if (roleByEmail != null) return roleByEmail
+        }
+        val currentRole = prefs.getString("user_role", null)
+        if (currentRole != null) return currentRole
+        if (emailKey.contains("organizador") || emailKey.contains("professor") || emailKey.contains("prof.") ||
+            nomeKey.contains("organizador") || nomeKey.contains("professor")) {
+            return "ORGANIZADOR"
+        }
+        return "ALUNO"
+    }
+
     fun isOrganizador(): Boolean = getUsuarioRole() == "ORGANIZADOR"
     fun isAluno(): Boolean = getUsuarioRole() == "ALUNO"
 
@@ -44,6 +66,8 @@ class UserPreferencesRepository(context: Context) {
     }
 
     fun getTotalInscritos(eventoId: Int): Int {
+        val detalhadas = getInscritosDoEvento(eventoId)
+        if (detalhadas.isNotEmpty()) return detalhadas.size
         val totalSalvo = prefs.getInt("total_inscritos_$eventoId", -1)
         if (totalSalvo >= 0) return totalSalvo
         return if (isInscrito(eventoId)) 1 else 0
@@ -51,6 +75,65 @@ class UserPreferencesRepository(context: Context) {
 
     fun setTotalInscritos(eventoId: Int, total: Int) {
         prefs.edit().putInt("total_inscritos_$eventoId", total.coerceAtLeast(0)).apply()
+    }
+
+    fun getTodasInscricoesDetalhadas(): List<EventSubscription> {
+        val jsonStr = prefs.getString("user_inscricoes_detalhadas", "[]") ?: "[]"
+        val lista = mutableListOf<EventSubscription>()
+        try {
+            val jsonArray = JSONArray(jsonStr)
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                lista.add(
+                    EventSubscription(
+                        id = obj.optString("id", UUID.randomUUID().toString()),
+                        eventoId = obj.optInt("eventoId"),
+                        alunoNome = obj.optString("alunoNome"),
+                        alunoMatricula = obj.optString("alunoMatricula"),
+                        alunoEmail = obj.optString("alunoEmail"),
+                        checkedIn = obj.optBoolean("checkedIn", false),
+                        dataInscricao = obj.optString("dataInscricao")
+                    )
+                )
+            }
+        } catch (_: Exception) {}
+        return lista
+    }
+
+    private fun salvarTodasInscricoesDetalhadas(lista: List<EventSubscription>) {
+        val jsonArray = JSONArray()
+        for (s in lista) {
+            val obj = JSONObject().apply {
+                put("id", s.id)
+                put("eventoId", s.eventoId)
+                put("alunoNome", s.alunoNome)
+                put("alunoMatricula", s.alunoMatricula)
+                put("alunoEmail", s.alunoEmail)
+                put("checkedIn", s.checkedIn)
+                put("dataInscricao", s.dataInscricao)
+            }
+            jsonArray.put(obj)
+        }
+        prefs.edit().putString("user_inscricoes_detalhadas", jsonArray.toString()).apply()
+    }
+
+    fun getInscritosDoEvento(eventoId: Int): List<EventSubscription> {
+        return getTodasInscricoesDetalhadas().filter { it.eventoId == eventoId }
+    }
+
+    fun isCheckedIn(eventoId: Int, email: String = getUsuarioEmail()): Boolean {
+        if (email.isEmpty()) return false
+        return getInscritosDoEvento(eventoId).any { it.alunoEmail.equals(email, ignoreCase = true) && it.checkedIn }
+    }
+
+    fun alternarCheckInAluno(eventoId: Int, alunoEmail: String) {
+        val lista = getTodasInscricoesDetalhadas().toMutableList()
+        val index = lista.indexOfFirst { it.eventoId == eventoId && it.alunoEmail.equals(alunoEmail, ignoreCase = true) }
+        if (index != -1) {
+            val sub = lista[index]
+            lista[index] = sub.copy(checkedIn = !sub.checkedIn)
+            salvarTodasInscricoesDetalhadas(lista)
+        }
     }
 
     fun getListaEsperaDoEvento(eventoId: Int): MutableList<String> {
@@ -106,6 +189,24 @@ class UserPreferencesRepository(context: Context) {
         inscricoes.add(eventoId.toString())
         prefs.edit().putStringSet("user_inscricoes", inscricoes).apply()
 
+        val email = getUsuarioEmail().ifEmpty { "aluno@campus.edu.br" }
+        val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        val dataFormatada = sdf.format(Date())
+        val detalhadas = getTodasInscricoesDetalhadas().toMutableList()
+        if (!detalhadas.any { it.eventoId == eventoId && it.alunoEmail.equals(email, ignoreCase = true) }) {
+            detalhadas.add(
+                EventSubscription(
+                    eventoId = eventoId,
+                    alunoNome = getUsuarioNome().ifEmpty { "Aluno" },
+                    alunoMatricula = getUsuarioMatricula().ifEmpty { "20260000" },
+                    alunoEmail = email,
+                    checkedIn = false,
+                    dataInscricao = dataFormatada
+                )
+            )
+            salvarTodasInscricoesDetalhadas(detalhadas)
+        }
+
         val totalAtual = getTotalInscritos(eventoId)
         setTotalInscritos(eventoId, totalAtual + 1)
         sairListaEspera(eventoId)
@@ -115,6 +216,10 @@ class UserPreferencesRepository(context: Context) {
         val inscricoes = getInscricoes()
         inscricoes.remove(eventoId.toString())
         prefs.edit().putStringSet("user_inscricoes", inscricoes).apply()
+
+        val email = getUsuarioEmail()
+        val detalhadas = getTodasInscricoesDetalhadas().filterNot { it.eventoId == eventoId && it.alunoEmail.equals(email, ignoreCase = true) }
+        salvarTodasInscricoesDetalhadas(detalhadas)
 
         val totalAtual = getTotalInscritos(eventoId)
         val novoTotal = (totalAtual - 1).coerceAtLeast(0)
@@ -421,7 +526,7 @@ class UserPreferencesRepository(context: Context) {
         val novoAudio = EventAudio(
             eventoId = eventoId,
             caminhoArquivo = caminhoArquivo,
-            duracaoTexto = caminhoArquivo,
+            duracaoTexto = duracaoTexto,
             autorNome = getUsuarioNome().ifEmpty { "Usuário" },
             autorEmail = getUsuarioEmail(),
             dataPublicacao = dataFormatada
