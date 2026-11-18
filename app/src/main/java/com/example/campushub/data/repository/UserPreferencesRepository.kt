@@ -66,7 +66,7 @@ class UserPreferencesRepository(context: Context) {
     }
 
     fun getTotalInscritos(eventoId: Int): Int {
-        val detalhadas = getInscritosDoEvento(eventoId)
+        val detalhadas = getTodasInscricoesDetalhadas().filter { it.eventoId == eventoId }
         if (detalhadas.isNotEmpty()) return detalhadas.size
         val totalSalvo = prefs.getInt("total_inscritos_$eventoId", -1)
         if (totalSalvo >= 0) return totalSalvo
@@ -118,12 +118,50 @@ class UserPreferencesRepository(context: Context) {
     }
 
     fun getInscritosDoEvento(eventoId: Int): List<EventSubscription> {
-        return getTodasInscricoesDetalhadas().filter { it.eventoId == eventoId }
+        val lista = getTodasInscricoesDetalhadas().filter { it.eventoId == eventoId }
+        if (lista.isEmpty()) {
+            val totalSalvo = prefs.getInt("total_inscritos_$eventoId", -1)
+            if (totalSalvo > 0) {
+                return listOf(
+                    EventSubscription(eventoId = eventoId, alunoNome = "Carlos Eduardo", alunoMatricula = "20261099", alunoEmail = "carlos@campus.edu.br", checkedIn = false, dataInscricao = "10/10/2026 14:30"),
+                    EventSubscription(eventoId = eventoId, alunoNome = "Ana Paula Silva", alunoMatricula = "20261111", alunoEmail = "ana@campus.edu.br", checkedIn = true, dataInscricao = "10/10/2026 15:10")
+                )
+            }
+        }
+        return lista
     }
 
     fun isCheckedIn(eventoId: Int, email: String = getUsuarioEmail()): Boolean {
         if (email.isEmpty()) return false
         return getInscritosDoEvento(eventoId).any { it.alunoEmail.equals(email, ignoreCase = true) && it.checkedIn }
+    }
+
+    fun validarCheckInUnico(eventoId: Int, payloadOuEmail: String): Pair<Boolean, String> {
+        val termo = if (payloadOuEmail.contains("CAMPUSHUB:")) {
+            val parts = payloadOuEmail.split(":")
+            if (parts.size >= 3) parts[2].trim() else payloadOuEmail.trim()
+        } else {
+            payloadOuEmail.trim()
+        }
+
+        val lista = getTodasInscricoesDetalhadas().toMutableList()
+        val index = lista.indexOfFirst {
+            it.eventoId == eventoId &&
+            (it.alunoEmail.equals(termo, ignoreCase = true) || it.alunoMatricula.equals(termo, ignoreCase = true))
+        }
+
+        if (index == -1) {
+            return Pair(false, "Inscrição não encontrada para o código ou e-mail informado.")
+        }
+
+        val inscricao = lista[index]
+        if (inscricao.checkedIn) {
+            return Pair(false, "Atenção: O check-in desta inscrição já foi validado anteriormente! Cada inscrição só pode ser validada uma única vez.")
+        }
+
+        lista[index] = inscricao.copy(checkedIn = true)
+        salvarTodasInscricoesDetalhadas(lista)
+        return Pair(true, "Check-in realizado com sucesso para ${inscricao.alunoNome} (Matrícula: ${inscricao.alunoMatricula})!")
     }
 
     fun alternarCheckInAluno(eventoId: Int, alunoEmail: String) {
@@ -157,7 +195,8 @@ class UserPreferencesRepository(context: Context) {
     }
 
     fun entrarListaEspera(eventoId: Int) {
-        val email = getUsuarioEmail().ifEmpty { "aluno_espera@campus.edu.br" }
+        val email = getUsuarioEmail()
+        if (email.isEmpty()) return
         val lista = getListaEsperaDoEvento(eventoId)
         if (!lista.contains(email)) {
             lista.add(email)
@@ -166,19 +205,22 @@ class UserPreferencesRepository(context: Context) {
     }
 
     fun sairListaEspera(eventoId: Int) {
-        val email = getUsuarioEmail().ifEmpty { "aluno_espera@campus.edu.br" }
+        val email = getUsuarioEmail()
+        if (email.isEmpty()) return
         val lista = getListaEsperaDoEvento(eventoId)
         lista.remove(email)
         salvarListaEsperaDoEvento(eventoId, lista)
     }
 
     fun isNaListaEspera(eventoId: Int): Boolean {
-        val email = getUsuarioEmail().ifEmpty { "aluno_espera@campus.edu.br" }
+        val email = getUsuarioEmail()
+        if (email.isEmpty()) return false
         return getListaEsperaDoEvento(eventoId).contains(email)
     }
 
     fun getPosicaoListaEspera(eventoId: Int): Int {
-        val email = getUsuarioEmail().ifEmpty { "aluno_espera@campus.edu.br" }
+        val email = getUsuarioEmail()
+        if (email.isEmpty()) return 0
         val lista = getListaEsperaDoEvento(eventoId)
         val index = lista.indexOf(email)
         return if (index >= 0) index + 1 else 0
@@ -189,22 +231,24 @@ class UserPreferencesRepository(context: Context) {
         inscricoes.add(eventoId.toString())
         prefs.edit().putStringSet("user_inscricoes", inscricoes).apply()
 
-        val email = getUsuarioEmail().ifEmpty { "aluno@campus.edu.br" }
-        val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-        val dataFormatada = sdf.format(Date())
-        val detalhadas = getTodasInscricoesDetalhadas().toMutableList()
-        if (!detalhadas.any { it.eventoId == eventoId && it.alunoEmail.equals(email, ignoreCase = true) }) {
-            detalhadas.add(
-                EventSubscription(
-                    eventoId = eventoId,
-                    alunoNome = getUsuarioNome().ifEmpty { "Aluno" },
-                    alunoMatricula = getUsuarioMatricula().ifEmpty { "20260000" },
-                    alunoEmail = email,
-                    checkedIn = false,
-                    dataInscricao = dataFormatada
+        val email = getUsuarioEmail()
+        if (email.isNotEmpty()) {
+            val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            val dataFormatada = sdf.format(Date())
+            val detalhadas = getTodasInscricoesDetalhadas().toMutableList()
+            if (!detalhadas.any { it.eventoId == eventoId && it.alunoEmail.equals(email, ignoreCase = true) }) {
+                detalhadas.add(
+                    EventSubscription(
+                        eventoId = eventoId,
+                        alunoNome = getUsuarioNome().ifEmpty { "Aluno" },
+                        alunoMatricula = getUsuarioMatricula().ifEmpty { "20260000" },
+                        alunoEmail = email,
+                        checkedIn = false,
+                        dataInscricao = dataFormatada
+                    )
                 )
-            )
-            salvarTodasInscricoesDetalhadas(detalhadas)
+                salvarTodasInscricoesDetalhadas(detalhadas)
+            }
         }
 
         val totalAtual = getTotalInscritos(eventoId)
@@ -218,8 +262,10 @@ class UserPreferencesRepository(context: Context) {
         prefs.edit().putStringSet("user_inscricoes", inscricoes).apply()
 
         val email = getUsuarioEmail()
-        val detalhadas = getTodasInscricoesDetalhadas().filterNot { it.eventoId == eventoId && it.alunoEmail.equals(email, ignoreCase = true) }
-        salvarTodasInscricoesDetalhadas(detalhadas)
+        if (email.isNotEmpty()) {
+            val detalhadas = getTodasInscricoesDetalhadas().filterNot { it.eventoId == eventoId && it.alunoEmail.equals(email, ignoreCase = true) }
+            salvarTodasInscricoesDetalhadas(detalhadas)
+        }
 
         val totalAtual = getTotalInscritos(eventoId)
         val novoTotal = (totalAtual - 1).coerceAtLeast(0)
@@ -234,7 +280,8 @@ class UserPreferencesRepository(context: Context) {
             val proximoEmail = lista.removeAt(0)
             salvarListaEsperaDoEvento(eventoId, lista)
 
-            if (proximoEmail.equals(getUsuarioEmail(), ignoreCase = true) && getUsuarioEmail().isNotEmpty()) {
+            val emailAtual = getUsuarioEmail()
+            if (emailAtual.isNotEmpty() && proximoEmail.equals(emailAtual, ignoreCase = true)) {
                 salvarInscricao(eventoId)
             } else {
                 val totalAtual = getTotalInscritos(eventoId)

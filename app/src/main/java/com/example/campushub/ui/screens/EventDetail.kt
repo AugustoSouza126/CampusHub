@@ -252,7 +252,7 @@ object EventDetail {
             }
 
             val tvAcompTitulo = TextView(context).apply {
-                text = "📊 Acompanhamento de Inscritos & Check-in"
+                text = "Acompanhamento de Inscritos e Check-in"
                 textSize = 16f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(AppColors.COLOR_TEXT_MAIN)
@@ -266,13 +266,42 @@ object EventDetail {
             val vagasTotais = evento.vagas
 
             val tvMetrics = TextView(context).apply {
-                text = "👥 Vagas Ocupadas: $totalInscritos / $vagasTotais (${if (vagasTotais > 0) (totalInscritos * 100 / vagasTotais) else 0}%)\n✅ Check-ins Realizados: $totalCheckIns / ${inscritosLista.size.coerceAtLeast(totalInscritos)} alunos"
+                text = "Vagas Ocupadas: $totalInscritos / $vagasTotais (${if (vagasTotais > 0) (totalInscritos * 100 / vagasTotais) else 0}%)\nCheck-ins Validados: $totalCheckIns / ${inscritosLista.size.coerceAtLeast(totalInscritos)} alunos"
                 textSize = 14f
                 typeface = Typeface.DEFAULT_BOLD
                 setTextColor(AppColors.COLOR_TEXT_MAIN)
                 setPadding(0, 0, 0, UIComponents.dpToPx(context, 10))
             }
             layoutAcompanhamento.addView(tvMetrics)
+
+            val btnValidarQrCode = UIComponents.criarBotao(context, "ESCANEAR / VALIDAR QR CODE DE CHECK-IN", primario = true) {
+                val inputPayload = UIComponents.criarCampoTexto(context, "Cole ou digite o código QR/E-mail do aluno...")
+                androidx.appcompat.app.AlertDialog.Builder(context)
+                    .setTitle("Validar Check-in de Aluno")
+                    .setMessage("Informe o código QR do aluno ou seu e-mail/matrícula para validar o check-in (permitido apenas uma única vez por inscrição):")
+                    .setView(inputPayload)
+                    .setPositiveButton("Validar") { dialog, _ ->
+                        val termo = inputPayload.text.toString().trim()
+                        if (termo.isNotEmpty()) {
+                            val (sucesso, mensagem) = userRepo.validarCheckInUnico(evento.id, termo)
+                            Toast.makeText(context, mensagem, Toast.LENGTH_LONG).show()
+                            if (sucesso) {
+                                atualizarManterPosicao()
+                            }
+                        }
+                        dialog.dismiss()
+                    }
+                    .setNegativeButton("Cancelar", null)
+                    .show()
+            }.apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    UIComponents.dpToPx(context, 44)
+                ).apply {
+                    setMargins(0, 0, 0, UIComponents.dpToPx(context, 12))
+                }
+            }
+            layoutAcompanhamento.addView(btnValidarQrCode)
 
             val tvSubInscritos = TextView(context).apply {
                 text = "Lista de Alunos Inscritos:"
@@ -307,38 +336,49 @@ object EventDetail {
                     }
 
                     val tvAlunoInfo = TextView(context).apply {
-                        text = "👤 ${sub.alunoNome}\n📄 Matrícula: ${sub.alunoMatricula}  •  ✉️ ${sub.alunoEmail}\n📅 Inscrito em: ${sub.dataInscricao}"
+                        text = "${sub.alunoNome}\nMatrícula: ${sub.alunoMatricula}  •  ${sub.alunoEmail}\nInscrito em: ${sub.dataInscricao}"
                         textSize = 13f
                         setTextColor(AppColors.COLOR_TEXT_MAIN)
                         setPadding(0, 0, 0, UIComponents.dpToPx(context, 4))
                     }
                     rowAluno.addView(tvAlunoInfo)
 
-                    val statusCheckIn = if (sub.checkedIn) "✅ Check-in Realizado" else "⏳ Check-in Pendente"
+                    val statusCheckIn = if (sub.checkedIn) "Check-in Realizado" else "Check-in Pendente"
                     val tvBadgeCheck = TextView(context).apply {
                         text = statusCheckIn
                         textSize = 12f
                         typeface = Typeface.DEFAULT_BOLD
-                        setTextColor(if (sub.checkedIn) Color.parseColor("#059669") else Color.parseColor("#D97706"))
+                        setTextColor(if (sub.checkedIn) AppColors.COLOR_GREEN_TEXT else Color.parseColor("#D97706"))
                         setPadding(0, 0, 0, UIComponents.dpToPx(context, 4))
                     }
                     rowAluno.addView(tvBadgeCheck)
 
-                    val btnToggleCheckIn = UIComponents.criarBotao(
-                        context = context,
-                        texto = if (sub.checkedIn) "CANCELAR CHECK-IN" else "CONFIRMAR CHECK-IN",
-                        primario = !sub.checkedIn
-                    ) {
-                        userRepo.alternarCheckInAluno(evento.id, sub.alunoEmail)
-                        Toast.makeText(context, "Status de check-in alterado para ${sub.alunoNome}!", Toast.LENGTH_SHORT).show()
-                        atualizarManterPosicao()
-                    }.apply {
-                        layoutParams = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            UIComponents.dpToPx(context, 38)
-                        )
+                    if (!sub.checkedIn) {
+                        val btnValidarCheckIn = UIComponents.criarBotao(
+                            context = context,
+                            texto = "VALIDAR CHECK-IN",
+                            primario = true
+                        ) {
+                            val (sucesso, mensagem) = userRepo.validarCheckInUnico(evento.id, sub.alunoEmail)
+                            Toast.makeText(context, mensagem, Toast.LENGTH_SHORT).show()
+                            atualizarManterPosicao()
+                        }.apply {
+                            layoutParams = LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.MATCH_PARENT,
+                                UIComponents.dpToPx(context, 38)
+                            )
+                        }
+                        rowAluno.addView(btnValidarCheckIn)
+                    } else {
+                        val tvJaValidado = TextView(context).apply {
+                            text = "Check-in concluído e validado (Único)"
+                            textSize = 12f
+                            typeface = Typeface.DEFAULT_BOLD
+                            setTextColor(AppColors.COLOR_GREEN_TEXT)
+                            setPadding(0, UIComponents.dpToPx(context, 4), 0, UIComponents.dpToPx(context, 4))
+                        }
+                        rowAluno.addView(tvJaValidado)
                     }
-                    rowAluno.addView(btnToggleCheckIn)
 
                     cardAluno.addView(rowAluno)
                     layoutAcompanhamento.addView(cardAluno)
@@ -378,7 +418,7 @@ object EventDetail {
 
             if (inscrito) {
                 val tvStatus = TextView(context).apply {
-                    text = if (alunoCheckedIn) "✅ Sua inscrição e check-in estão confirmados neste evento!" else "Sua inscrição está confirmada neste evento."
+                    text = if (alunoCheckedIn) "Sua inscrição e check-in estão confirmados neste evento!" else "Sua inscrição está confirmada neste evento."
                     textSize = 14f
                     typeface = Typeface.DEFAULT_BOLD
                     setTextColor(AppColors.COLOR_GREEN_TEXT)
@@ -386,13 +426,63 @@ object EventDetail {
                 }
                 layout.addView(tvStatus)
 
-                if (!alunoCheckedIn) {
-                    layout.addView(UIComponents.criarBotao(context, "📍 MARCAR MEU CHECK-IN NO EVENTO", primario = true) {
-                        userRepo.alternarCheckInAluno(evento.id, userRepo.getUsuarioEmail())
-                        Toast.makeText(context, "Check-in realizado com sucesso!", Toast.LENGTH_SHORT).show()
-                        atualizarManterPosicao()
-                    })
+                val cardQrCode = UIComponents.criarCardView(context, 12f, 2f, 16, AppColors.COLOR_CARD_BG)
+                val layoutQr = LinearLayout(context).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER_HORIZONTAL
                 }
+
+                val tvQrTitulo = TextView(context).apply {
+                    text = "QR Code de Check-in"
+                    textSize = 15f
+                    typeface = Typeface.DEFAULT_BOLD
+                    setTextColor(AppColors.COLOR_TEXT_MAIN)
+                    gravity = Gravity.CENTER
+                    setPadding(0, 0, 0, UIComponents.dpToPx(context, 4))
+                }
+                layoutQr.addView(tvQrTitulo)
+
+                val tvQrSub = TextView(context).apply {
+                    text = "Apresente este código ao organizador para registrar sua presença no evento."
+                    textSize = 12f
+                    setTextColor(AppColors.COLOR_TEXT_MUTED)
+                    gravity = Gravity.CENTER
+                    setPadding(0, 0, 0, UIComponents.dpToPx(context, 12))
+                }
+                layoutQr.addView(tvQrSub)
+
+                val qrPayload = "CAMPUSHUB:${evento.id}:${userRepo.getUsuarioEmail()}:${userRepo.getUsuarioMatricula()}"
+                val qrBitmap = com.example.campushub.util.QrCodeGenerator.gerarBitmap(qrPayload, 400)
+
+                val ivQrCode = ImageView(context).apply {
+                    setImageBitmap(qrBitmap)
+                    layoutParams = LinearLayout.LayoutParams(
+                        UIComponents.dpToPx(context, 180),
+                        UIComponents.dpToPx(context, 180)
+                    ).apply {
+                        gravity = Gravity.CENTER_HORIZONTAL
+                        setMargins(0, 0, 0, UIComponents.dpToPx(context, 12))
+                    }
+                }
+                layoutQr.addView(ivQrCode)
+
+                val statusCheckText = if (alunoCheckedIn) "Status: Check-in Realizado" else "Status: Inscrição Confirmada (Aguardando Validação do Check-in)"
+                val tvQrStatus = TextView(context).apply {
+                    text = statusCheckText
+                    textSize = 12f
+                    typeface = Typeface.DEFAULT_BOLD
+                    setTextColor(if (alunoCheckedIn) AppColors.COLOR_GREEN_TEXT else AppColors.COLOR_PRIMARY)
+                    gravity = Gravity.CENTER
+                }
+                layoutQr.addView(tvQrStatus)
+
+                cardQrCode.addView(layoutQr)
+                layout.addView(cardQrCode, LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(0, UIComponents.dpToPx(context, 8), 0, UIComponents.dpToPx(context, 12))
+                })
 
                 layout.addView(UIComponents.criarBotao(context, "CANCELAR INSCRIÇÃO", primario = false, perigo = true) {
                     userRepo.removerInscricao(evento.id)
